@@ -1,5 +1,6 @@
 
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.responses import HTMLResponse
 from sqlalchemy import create_engine, Column, Integer, String, func
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.declarative import declarative_base
@@ -58,6 +59,11 @@ def get_db():
         db.close()
 
 # --- API Endpoints ---
+@app.get("/", response_class=HTMLResponse, summary="Root endpoint")
+def read_root():
+    with open("dashboard.html", "r") as f:
+        return f.read()
+
 @app.post("/ingest/", response_model=LogEntry, summary="Ingest a new log entry")
 def ingest_log(log: LogCreate, db: Session = Depends(get_db)):
     db_log = Log(**log.dict())
@@ -67,10 +73,12 @@ def ingest_log(log: LogCreate, db: Session = Depends(get_db)):
     return db_log
 
 @app.get("/query/", response_model=List[LogEntry], summary="Query log entries")
-def query_logs(level: Optional[str] = None, limit: int = 100, db: Session = Depends(get_db)):
+def query_logs(level: Optional[str] = None, search: Optional[str] = None, limit: int = 100, db: Session = Depends(get_db)):
     query = db.query(Log)
     if level:
         query = query.filter(Log.level == level)
+    if search:
+        query = query.filter(Log.message.contains(search))
     return query.limit(limit).all()
 
 @app.get("/summary/", summary="Get a summary of log counts by level")

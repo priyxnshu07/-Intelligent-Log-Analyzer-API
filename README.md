@@ -14,9 +14,14 @@ This project was built in a few hours as a key part of a strategic job applicati
 
 ## Features
 
-1.  **Log Ingestion**: A `POST /ingest/` endpoint to receive and store new log entries.
-2.  **Log Querying**: A `GET /query/` endpoint that retrieves stored logs, with the ability to filter by log `level`.
-3.  **Log Summarization**: A `GET /summary/` endpoint that provides a count of logs grouped by their `level`, demonstrating data aggregation.
+1.  **Visual Dashboard**: A real-time, auto-refreshing UI accessible at the root (`/`) to monitor incoming logs and view system health summaries.
+2.  **Log Ingestion**: A `POST /ingest/` endpoint to receive and store new log entries from connected microservices or client apps.
+3.  **Advanced Querying**: A `GET /query/` endpoint that retrieves stored logs. Supports filtering by severity `level` and full-text `search` within log messages.
+4.  **Log Summarization**: A `GET /summary/` endpoint providing aggregated counts of logs grouped by severity.
+
+## Integration Example
+
+This API is designed to act as a **Centralized Logging Server** for other applications in a microservices architecture. For example, a Node.js Express application can use middleware to automatically push traffic data and error reports to this API via HTTP POST requests using libraries like `axios`.
 
 ## How to Run This Project
 
@@ -39,12 +44,12 @@ This project was built in a few hours as a key part of a strategic job applicati
 
 4.  **Run the server:**
     ```bash
-    uvicorn main:app --reload
+    python3 main.py
     ```
-    The `--reload` flag means the server will automatically restart when you make changes to the code.
 
-5.  **Access the API:**
-    The API will be running at `http://127.0.0.1:8000`. You can access the interactive API documentation (provided by Swagger UI) at `http://127.0.0.1:8000/docs`.
+5.  **Access the Dashboard & API:**
+    *   **Live Dashboard:** `http://127.0.0.1:8000/`
+    *   **Swagger API Docs:** `http://127.0.0.1:8000/docs`
 
 ## Example API Calls
 
