@@ -71,3 +71,18 @@ You can use `curl` or any API client to interact with the endpoints.
     ```bash
     curl -X GET "http://127.0.0.1:8000/summary/"
     ```
+  ## Architectural Decisions
+
+**Why Two Services (Node.js + Python)?**
+I designed this as a polyglot microservices system to demonstrate cross-language integration patterns 
+common in production environments. The Node.js middleware handles lightweight request routing and 
+client-side interactions, while the Python/FastAPI backend manages compute-heavy log processing and 
+database operations. This mirrors real-world architectures where you choose the right tool per workload.
+
+**Why FastAPI for the Backend?**
+Async I/O and Pydantic validation make FastAPI ideal for high-throughput log ingestion. The automatic 
+OpenAPI docs also serve as a contract for frontend integration.
+
+**Why SQLAlchemy ORM?**
+I wanted type-safe database interactions while maintaining flexibility to optimize raw SQL queries 
+for analytics endpoints if needed.
