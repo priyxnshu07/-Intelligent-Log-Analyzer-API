@@ -1,91 +1,88 @@
-
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import HTMLResponse
-from sqlalchemy import create_engine, Column, Integer, String, func
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.declarative import declarative_base
-from pydantic import BaseModel
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 from typing import List, Optional
+from database import engine, get_db, Base
+from models import Log
+from schemas import LogCreate, LogEntry
+from agent_routes import router as agent_router
 import os
+from dotenv import load_dotenv
 
-# --- Configuration ---
-DATABASE_URL = "sqlite:///./test.db"
+# Load environment variables
+load_dotenv()
 
-# --- Database Setup ---
-engine = create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-
-# --- SQLAlchemy Models ---
-class Log(Base):
-    __tablename__ = "logs"
-    id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(String, index=True)
-    level = Column(String, index=True)
-    message = Column(String)
-
+# Create database tables
 Base.metadata.create_all(bind=engine)
 
-# --- Pydantic Models ---
-class LogBase(BaseModel):
-    timestamp: str
-    level: str
-    message: str
-
-class LogCreate(LogBase):
-    pass
-
-class LogEntry(LogBase):
-    id: int
-
-    class Config:
-        from_attributes = True
-
-# --- FastAPI Application ---
 app = FastAPI(
     title="Intelligent Log Analyzer API",
-    description="A demonstration API to ingest, query, and summarize log data. Built with Python, FastAPI, and SQLAlchemy.",
-    version="1.0.0",
+    description="A centralized logging server with AI-powered diagnostics.",
+    version="2.0.0",
 )
 
-# --- Dependency Injection ---
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Include agent routes
+app.include_router(agent_router, prefix="/agent", tags=["agent"])
 
-# --- API Endpoints ---
 @app.get("/", response_class=HTMLResponse, summary="Root endpoint")
 def read_root():
-    with open("dashboard.html", "r") as f:
-        return f.read()
+    try:
+        with open("dashboard.html", "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>Welcome to Intelligent Log Analyzer API</h1><p>Dashboard not found.</p>"
 
 @app.post("/ingest/", response_model=LogEntry, summary="Ingest a new log entry")
 def ingest_log(log: LogCreate, db: Session = Depends(get_db)):
-    db_log = Log(**log.dict())
+    # Map extra_info field to metadata_json in model
+    log_data = log.model_dump(by_alias=False)
+    extra = log_data.pop("extra_info", None)
+    
+    db_log = Log(**log_data, metadata_json=extra)
     db.add(db_log)
     db.commit()
     db.refresh(db_log)
-    return db_log
+    
+    # Return a dictionary to avoid Pydantic looking at ORM internal attributes
+    return {
+        "id": db_log.id,
+        "timestamp": db_log.timestamp,
+        "service_name": db_log.service_name,
+        "log_level": db_log.log_level,
+        "message": db_log.message,
+        "metadata": db_log.metadata_json
+    }
 
 @app.get("/query/", response_model=List[LogEntry], summary="Query log entries")
 def query_logs(level: Optional[str] = None, search: Optional[str] = None, limit: int = 100, db: Session = Depends(get_db)):
     query = db.query(Log)
     if level:
-        query = query.filter(Log.level == level)
+        query = query.filter(Log.log_level == level)
     if search:
         query = query.filter(Log.message.contains(search))
-    return query.limit(limit).all()
+    
+    logs = query.order_by(Log.id.desc()).limit(limit).all()
+    
+    # Map to list of dicts
+    result = []
+    for log in logs:
+        result.append({
+            "id": log.id,
+            "timestamp": log.timestamp,
+            "service_name": log.service_name,
+            "log_level": log.log_level,
+            "message": log.message,
+            "metadata": log.metadata_json
+        })
+        
+    return result
 
 @app.get("/summary/", summary="Get a summary of log counts by level")
 def get_summary(db: Session = Depends(get_db)):
     summary = (
-        db.query(Log.level, func.count(Log.level).label("count"))
-        .group_by(Log.level)
+        db.query(Log.log_level, func.count(Log.log_level).label("count"))
+        .group_by(Log.log_level)
         .all()
     )
     return {level: count for level, count in summary}

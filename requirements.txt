@@ -1,0 +1,6 @@
+fastapi[all]
+sqlalchemy
+openai
+tenacity
+python-dotenv
+uvicorn
