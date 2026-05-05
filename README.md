@@ -51,26 +51,40 @@ This API is designed to act as a **Centralized Logging Server** for other applic
     *   **Live Dashboard:** `http://127.0.0.1:8000/`
     *   **Swagger API Docs:** `http://127.0.0.1:8000/docs`
 
-## Example API Calls
+## 🤖 AI-Powered Log Diagnostician (NEW)
 
-You can use `curl` or any API client to interact with the endpoints.
+This project now includes an intelligent agent that automatically diagnoses errors using LLMs.
 
-*   **Ingest a new log:**
-    ```bash
-    curl -X POST "http://127.0.0.1:8000/ingest/" 
-    -H "Content-Type: application/json" 
-    -d '{"timestamp": "2026-05-02T14:00:00", "level": "error", "message": "Critical failure in subsystem."}'
-    ```
+### How It Works
+1. Agent queries the database for ERROR-level logs
+2. Sends error context to OpenAI GPT-4 / Groq Llama-3
+3. Returns root cause analysis, suggested fixes, and prevention strategies
 
-*   **Query for 'error' logs:**
-    ```bash
-    curl -X GET "http://127.0.0.1:8000/query/?level=error"
-    ```
+### Why I Built This
+I wanted to demonstrate "System of Agents" — where AI doesn't just assist development, 
+but becomes part of the production infrastructure. This agent turns raw error logs into 
+actionable debugging insights.
 
-*   **Get the summary of all logs:**
-    ```bash
-    curl -X GET "http://127.0.0.1:8000/summary/"
-    ```
+### Try It
+```bash
+# Get diagnosis for latest error
+curl http://localhost:8000/agent/diagnose/latest
+
+# Diagnose a specific log
+curl -X POST http://localhost:8000/agent/diagnose -d '{"log_id": 123}'
+```
+
+See [README_AGENT.md](./README_AGENT.md) for full documentation.
+
+---
+
+**Architecture: Distributed Microservices + AI Agent**
+```
+┌─────────────┐      ┌──────────────┐      ┌─────────────┐      ┌─────────┐
+│ Client Apps │─────>│ Log Analyzer │─────>│  Database   │<────>│  Agent  │
+│ (Node.js)   │      │  (FastAPI)   │      │ (SQLite)    │      │ (LLM)   │
+└─────────────┘      └──────────────┘      └─────────────┘      └─────────┘
+```
   ## Architectural Decisions
 
 **Why Two Services (Node.js + Python)?**
