@@ -1,0 +1,23 @@
+2024/05/01 10:00:00 server starting on :8080
+2024/05/01 10:00:05 db: connection to 10.0.0.5:5432 failed: timeout after 30s
+2024/05/01 10:00:35 db: connection to 10.0.0.5:5432 failed: timeout after 31s
+2024/05/01 10:01:10 http: panic serving 10.0.0.9:51234: runtime error: index out of range [5] with length 3
+goroutine 33 [running]:
+net/http.(*conn).serve.func1()
+	/usr/local/go/src/net/http/server.go:1850 +0xbf
+panic({0x6a1b20, 0xc0001a2000})
+	/usr/local/go/src/runtime/panic.go:884 +0x213
+main.pick(...)
+	/srv/app/handlers.go:21
+main.(*Server).handle(0xc0000a4000, {0x7c2f10, 0xc0001b6000}, 0xc0001b8000)
+	/srv/app/handlers.go:48 +0x1a5
+2024/05/01 10:02:00 worker finished
+panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x4a1b2c]
+
+goroutine 1 [running]:
+main.process(0x0)
+	/srv/app/main.go:42 +0x1d
+main.main()
+	/srv/app/main.go:30 +0x25
+exit status 2

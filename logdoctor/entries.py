@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 
+from logdoctor.gotrace import detect_go, is_goroutine_header
 from logdoctor.header import MAX_MESSAGE_CHARS, Header, parse_header
 from logdoctor.javatrace import detect_java, looks_like_java_exception
 from logdoctor.levels import WARNING_RANK, rank
@@ -31,7 +32,7 @@ _EXCEPTION_NAME = re.compile(r"\b([A-Za-z_][\w.]*(?:Error|Exception))\b")
 class _Draft:
     """A record being assembled."""
 
-    __slots__ = ("start", "end", "header", "level", "inferred", "lines", "traceback_open")
+    __slots__ = ("start", "end", "header", "level", "inferred", "lines", "traceback_open", "go_trace", "go_open")
 
     def __init__(self, index: int, line: str, header: Header | None, *, is_traceback: bool):
         self.start = index
@@ -39,6 +40,8 @@ class _Draft:
         self.header = header
         self.lines = [line]
         self.traceback_open = is_traceback
+        self.go_trace = False  # this record holds a Go goroutine dump
+        self.go_open = False  # inside a goroutine dump, which a blank line ends
         if is_traceback:
             self.level, self.inferred = "ERROR", True
         elif header is None:
@@ -67,6 +70,8 @@ def build_entries(lines: list[str], first_line_no: int = 1) -> list[LogEntry]:
 
     for index, line in enumerate(lines):
         if not line.strip():
+            if current:
+                current.go_open = False
             continue
         header = headers[index]
         is_traceback = line.startswith(TRACEBACK_START)
@@ -88,9 +93,15 @@ def build_entries(lines: list[str], first_line_no: int = 1) -> list[LogEntry]:
         if starts or current is None:
             current = _Draft(index, line, header, is_traceback=is_traceback)
             drafts.append(current)
+            if is_goroutine_header(line):
+                current.go_trace = current.go_open = True
             continue
 
         current.add(index, line)
+        if is_goroutine_header(line):
+            current.go_trace = current.go_open = True
+        elif line.startswith("exit status "):
+            current.go_open = False  # last line of a crashed Go program's output
         if is_traceback or is_chain:
             current.traceback_open = is_traceback
         elif current.traceback_open and line[0] not in " \t":
@@ -101,6 +112,12 @@ def build_entries(lines: list[str], first_line_no: int = 1) -> list[LogEntry]:
 
 def _continues_trace(line: str, upcoming: list[str], current: _Draft) -> bool:
     """An exception line right after an error line belongs to that error."""
+    if current.go_open:
+        return True  # function lines of a Go goroutine dump are not indented
+    if is_goroutine_header(line):
+        return current.go_trace or rank(current.level) >= WARNING_RANK
+    if line.startswith("[signal ") and rank(current.level) >= WARNING_RANK:
+        return True
     if line.startswith("Caused by:"):
         return True
     if rank(current.level) < WARNING_RANK:
@@ -129,6 +146,8 @@ def _finish(draft: _Draft, first_line_no: int) -> LogEntry:
         language, trace = "java", detect_java(full_text)
     if trace is None:
         language, trace = "javascript", detect_node(full_text)
+    if trace is None:
+        language, trace = "go", detect_go(full_text)
     if trace:
         entry.language = language
         entry.exception_type = trace.exception_type
