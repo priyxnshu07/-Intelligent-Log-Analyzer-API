@@ -31,7 +31,7 @@ def is_goroutine_header(line: str) -> bool:
     return bool(GOROUTINE.match(line))
 
 
-def _function_name(line: str) -> str:
+def strip_call_arguments(line: str) -> str:
     """'main.(*Server).Handle(0xc0001, {0x4, 0x5})' -> 'main.(*Server).Handle'."""
     text = line.strip()
     if not text.endswith(")"):
@@ -96,6 +96,6 @@ def detect_go(text: str) -> TraceError | None:
                 frames.append(f"{file}:{pending}")
             pending = None
         elif line[0] not in " \t" and not line.startswith(_SKIP_FUNCTION_PREFIXES):
-            pending = _function_name(line)
+            pending = strip_call_arguments(line)
 
     return TraceError(kind, message.strip(), list(reversed(frames))[-10:])
