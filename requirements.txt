@@ -1,6 +1,2 @@
-fastapi[all]
-sqlalchemy
-openai
-tenacity
-python-dotenv
-uvicorn
+fastapi==0.163.2
+uvicorn==0.54.0
