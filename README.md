@@ -59,6 +59,20 @@ Errors always look like `{"error": {"code": "...", "message": "..."}}`.
 Too large is `413`, a wrong file type is `415`, and a busy server is `503`
 with `Retry-After`. Responses are sent with `Cache-Control: no-store`.
 
+## Command line
+
+Runs locally and sends nothing anywhere.
+
+```bash
+pip install .                       # from a clone of this repo
+logdoctor app.log                   # readable report
+logdoctor app.log --json            # full analysis as JSON
+cat app.log | logdoctor             # read standard input
+logdoctor app.log --fail-on error   # exit 1 if an error group is found (for CI)
+```
+
+Exit codes: `0` ok, `1` the `--fail-on` level was reached, `2` bad input.
+
 ## Limits
 
 These protect a small free server. They can be changed with environment variables (see `.env.example`).
@@ -103,7 +117,7 @@ A free Render service goes to sleep after 15 minutes without traffic, and the fi
 - [x] **R0** Foundation: stateless FastAPI app, `/health`, `$PORT`, Render config, tests, CI
 - [x] **R1a** Analysis engine (`logdoctor/` package): generic log parsing, Python tracebacks, grouping, severity, frequency, timeline
 - [x] **R1b** API endpoints for pasted text and uploaded files, with the size limits
-- [ ] **R1c** `logdoctor` command-line tool using the same engine
+- [x] **R1c** `logdoctor` command-line tool using the same engine
 - [ ] **R2** Web page: paste, upload, sample logs, results, clear error messages
 - [ ] **R2b** Instant landing page that loads even while the server is asleep
 - [ ] **R3** Java, JavaScript/Node.js, Go and C++ parsers, plus JSON and CSV logs
