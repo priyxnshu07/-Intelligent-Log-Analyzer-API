@@ -1,0 +1,21 @@
+2024-05-01T10:00:00.100Z info: server listening on 3000
+2024-05-01T10:00:04.200Z error: Unhandled error for request 8812
+TypeError: Cannot read properties of undefined (reading 'id')
+    at getUser (/srv/app/src/users.js:42:17)
+    at async Promise.all (index 0)
+    at /srv/app/src/server.js:10:5
+    at Layer.handle [as handle_request] (/srv/app/node_modules/express/lib/router/layer.js:95:5)
+    at node:internal/process/task_queues:96:5
+2024-05-01T10:00:09.300Z warn: slow response 1800ms
+2024-05-01T10:01:04.200Z error: Unhandled error for request 9020
+TypeError: Cannot read properties of undefined (reading 'id')
+    at getUser (/srv/app/src/users.js:42:17)
+    at async Promise.all (index 0)
+    at /srv/app/src/server.js:10:5
+    at Layer.handle [as handle_request] (/srv/app/node_modules/express/lib/router/layer.js:95:5)
+    at node:internal/process/task_queues:96:5
+2024-05-01T10:02:00.000Z error: Database call failed
+Error: query failed
+    at runQuery (/srv/app/src/db.js:77:11)
+    [cause]: MongoServerError: connect ECONNREFUSED 127.0.0.1:27017
+        at Connection.onError (/srv/app/node_modules/mongodb/lib/cmap/connection.js:210:16)

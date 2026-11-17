@@ -35,6 +35,10 @@ _LEAD = re.compile(rf"^({_WORDS})\s*:\s", re.IGNORECASE)
 # level=error  /  "level":"error"
 _KV = re.compile(rf'\blevel"?\s*[=:]\s*"?({_WORDS})\b', re.IGNORECASE)
 
+# winston/pino-style "2024-05-01T10:00:00Z info: message": the level follows the
+# timestamp in any case, and needs the colon so plain words are not mistaken for it.
+_AFTER_TS = re.compile(rf"\s{{0,3}}({_WORDS})\s{{0,2}}:", re.IGNORECASE)
+
 _EMPTY_BRACKETS = re.compile(r"\[\s*\]")
 
 
@@ -93,6 +97,11 @@ def parse_header(line: str) -> Header | None:
             level_word, level_span, level_strong = match.group(1), match.span(1), True
     cut_level = level_word is not None
 
+    if level_word is None and ts_near and ts_span:
+        match = _AFTER_TS.match(head, ts_span[1])
+        if match:
+            level_word, level_span, level_strong = match.group(1), match.span(1), True
+            cut_level = True
     if level_word is None:
         match = _LEAD.match(head)
         if match:

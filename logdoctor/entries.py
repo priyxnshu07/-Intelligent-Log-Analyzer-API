@@ -13,6 +13,7 @@ from logdoctor.header import MAX_MESSAGE_CHARS, Header, parse_header
 from logdoctor.javatrace import detect_java, looks_like_java_exception
 from logdoctor.levels import WARNING_RANK, rank
 from logdoctor.models import LogEntry
+from logdoctor.nodetrace import detect_node, looks_like_js_exception
 from logdoctor.pytrace import CHAIN_MARKERS, TRACEBACK_START, detect_python
 
 MAX_TEXT_CHARS = 4000
@@ -81,7 +82,7 @@ def build_entries(lines: list[str], first_line_no: int = 1) -> list[LogEntry]:
         else:
             top = line[0] not in " \t"
             starts = top and not (current and current.traceback_open)
-            if starts and current and _continues_java_trace(line, current):
+            if starts and current and _continues_trace(line, lines[index + 1 :][:1], current):
                 starts = False
 
         if starts or current is None:
@@ -98,11 +99,14 @@ def build_entries(lines: list[str], first_line_no: int = 1) -> list[LogEntry]:
     return [_finish(draft, first_line_no) for draft in drafts]
 
 
-def _continues_java_trace(line: str, current: _Draft) -> bool:
-    """A Java exception line right after an error line belongs to that error."""
+def _continues_trace(line: str, upcoming: list[str], current: _Draft) -> bool:
+    """An exception line right after an error line belongs to that error."""
     if line.startswith("Caused by:"):
         return True
-    return rank(current.level) >= WARNING_RANK and looks_like_java_exception(line)
+    if rank(current.level) < WARNING_RANK:
+        return False
+    next_line = upcoming[0] if upcoming else None
+    return looks_like_java_exception(line) or looks_like_js_exception(line, next_line)
 
 
 def _finish(draft: _Draft, first_line_no: int) -> LogEntry:
@@ -123,6 +127,8 @@ def _finish(draft: _Draft, first_line_no: int) -> LogEntry:
     language, trace = "python", detect_python(full_text)
     if trace is None:
         language, trace = "java", detect_java(full_text)
+    if trace is None:
+        language, trace = "javascript", detect_node(full_text)
     if trace:
         entry.language = language
         entry.exception_type = trace.exception_type

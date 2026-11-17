@@ -87,3 +87,28 @@ def test_strong_marks_lines_that_start_a_record():
     assert not parse_header("plain continuation text").strong
     # a level word far from the start of a long line does not count
     assert not parse_header("x" * 100 + " ERROR here").strong
+
+
+@pytest.mark.parametrize(
+    "line, level, message",
+    [
+        ("2024-05-01T10:00:00.100Z info: server listening", "INFO", "server listening"),
+        ("2024-05-01 10:00:00 warn: slow response", "WARNING", "slow response"),
+        ("2024-05-01 10:00:00 Error : cannot connect", "ERROR", "cannot connect"),
+    ],
+)
+def test_level_after_timestamp_with_colon(line, level, message):
+    header = parse_header(line)
+    assert header.level == level
+    assert header.message == message
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "2024-05-01 10:00:00 error connecting to database",  # plain words, no colon
+        "2024-05-01 10:00:00 the info: here is not a level",
+    ],
+)
+def test_plain_words_after_timestamp_are_not_levels(line):
+    assert parse_header(line).level == "UNKNOWN"
