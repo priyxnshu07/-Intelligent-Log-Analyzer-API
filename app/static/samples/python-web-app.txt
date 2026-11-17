@@ -1,0 +1,19 @@
+2024-05-01 09:00:00,120 INFO app.main Starting web server on port 8000
+2024-05-01 09:00:02,431 INFO app.db Connected to postgres at 10.0.0.5
+2024-05-01 09:12:44,010 WARNING app.db Slow query took 2300ms: SELECT * FROM orders WHERE user_id=4821
+2024-05-01 09:14:03,552 ERROR app.api Unhandled error for user 4821
+Traceback (most recent call last):
+  File "/srv/app/api.py", line 88, in get_profile
+    return profile["user_id"]
+KeyError: 'user_id'
+2024-05-01 09:14:09,801 WARNING app.db Slow query took 3100ms: SELECT * FROM orders WHERE user_id=9917
+2024-05-01 09:15:31,220 ERROR app.api Unhandled error for user 9917
+Traceback (most recent call last):
+  File "/srv/app/api.py", line 88, in get_profile
+    return profile["user_id"]
+KeyError: 'user_id'
+2024-05-01 09:20:10,004 ERROR app.db Connection to 10.0.0.5 timed out after 30s
+2024-05-01 09:20:41,004 ERROR app.db Connection to 10.0.0.5 timed out after 30s
+2024-05-01 09:21:12,004 ERROR app.db Connection to 10.0.0.5 timed out after 30s
+2024-05-01 09:21:50,310 INFO app.db Reconnected to postgres at 10.0.0.5
+2024-05-01 09:40:02,777 CRITICAL app.main Out of memory, shutting down

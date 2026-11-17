@@ -1,66 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universal Log Doctor</title>
-    <style>
-        :root {
-            --primary: #ccff00;
-            --bg: #0a0a0a;
-            --card: #1a1a1a;
-            --text: #ffffff;
-            --muted: #999999;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 24px;
-        }
-        main { max-width: 720px; margin: 8vh auto 0; }
-        h1 { color: var(--primary); margin: 0 0 8px; }
-        .card {
-            background: var(--card);
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-        p { line-height: 1.5; }
-        .muted { color: var(--muted); }
-        a { color: var(--primary); }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universal Log Doctor</title>
+<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <main>
-        <h1>Universal Log Doctor</h1>
-        <p class="muted">Find, group and explain errors in your application logs.</p>
+<main>
+  <h1>Universal Log Doctor</h1>
+  <p class="muted">Paste or upload an application log. Get repeated errors grouped, counted and placed on a timeline. Free, no account, nothing stored.</p>
 
-        <div class="card">
-            <strong>Work in progress.</strong>
-            <p>
-                The log analysis itself is not built yet. This page is the
-                deployment foundation: the server is up and the health check
-                works. Uploading logs, error grouping and diagnosis arrive in
-                the next releases.
-            </p>
-            <p class="muted">
-                Server status: <span id="status">checking...</span>
-            </p>
-        </div>
-    </main>
+  <section class="card">
+    <h2>Your log</h2>
+    <textarea id="text" placeholder="Paste log text here..." spellcheck="false"></textarea>
+    <div class="row">
+      <button id="analyze">Analyze</button>
+      <label class="filebtn">Upload file<input id="file" type="file" hidden accept=".txt,.log,.json,.jsonl,.ndjson,.csv"></label>
+      <button id="sample" class="secondary">Try a sample</button>
+      <span id="busy" class="muted"></span>
+    </div>
+    <div id="error" role="alert"></div>
+  </section>
 
-    <script>
-        fetch('/health')
-            .then(function (res) { return res.json(); })
-            .then(function (data) {
-                document.getElementById('status').textContent = data.status;
-            })
-            .catch(function () {
-                document.getElementById('status').textContent = 'unreachable';
-            });
-    </script>
+  <div id="results">
+    <section class="card"><h2>Summary</h2><div class="stats" id="stats"></div><div id="notices"></div></section>
+    <section class="card"><h2>Timeline</h2><div id="timeline"></div><p class="muted" id="timeline-note"></p></section>
+    <section class="card"><h2>Problems found</h2><div id="groups"></div></section>
+  </div>
+
+  <section class="card">
+    <h2>What this tool does and does not do</h2>
+    <ul class="limits">
+      <li>It groups repeated errors by pattern. It does not understand your code.</li>
+      <li>Python tracebacks are read in detail. Java, Node.js, Go and C++ traces are coming; for now those logs are grouped by their message lines.</li>
+      <li>Only the most recent 50,000 lines are analyzed. Files up to 5 MB, pasted text up to 1 MB.</li>
+      <li>Your log is analyzed in memory and not saved. Avoid pasting secrets such as passwords or tokens.</li>
+    </ul>
+  </section>
+</main>
+<script src="/static/app.js"></script>
 </body>
 </html>
