@@ -1,0 +1,108 @@
+"""HTTP endpoints. They are thin: check the input, call the engine, return the result."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, Query, Request, Response
+from pydantic import ValidationError
+
+from app.errors import ApiError
+from app.ingest import ALLOWED_EXTENSIONS, check_extension, clean_filename, decode_log
+from app.limits import format_bytes, read_limited_body, too_large
+from app.schemas import AnalyzeResponse, SourceInfo, TextRequest
+from logdoctor import analyze
+
+
+def no_store(response: Response) -> None:
+    """Logs can be sensitive, so browsers and proxies must not keep the responses."""
+    response.headers["Cache-Control"] = "no-store"
+
+
+router = APIRouter(prefix="/api", dependencies=[Depends(no_store)])
+
+_TEXT_BODY = {
+    "requestBody": {
+        "required": True,
+        "content": {"application/json": {"schema": TextRequest.model_json_schema()}},
+    }
+}
+_FILE_BODY = {
+    "requestBody": {
+        "required": True,
+        "description": "The raw bytes of the log file. Content-Type is ignored.",
+        "content": {"application/octet-stream": {"schema": {"type": "string", "format": "binary"}}},
+    }
+}
+
+
+@router.get("/limits", summary="Limits and accepted file types")
+def get_limits(request: Request) -> dict:
+    settings = request.app.state.settings
+    return {
+        "max_upload_bytes": settings.max_upload_bytes,
+        "max_paste_bytes": settings.max_paste_bytes,
+        "max_lines": settings.max_lines,
+        "allowed_extensions": list(ALLOWED_EXTENSIONS),
+    }
+
+
+@router.post(
+    "/analyze/text",
+    response_model=AnalyzeResponse,
+    summary="Analyze pasted log text",
+    openapi_extra=_TEXT_BODY,
+)
+async def analyze_text(request: Request) -> AnalyzeResponse:
+    settings = request.app.state.settings
+    hint = f"Upload it as a file instead (up to {format_bytes(settings.max_upload_bytes)})."
+
+    # JSON escaping can make text a bit longer, so the raw body gets some room.
+    body = await read_limited_body(request, settings.max_paste_bytes * 2 + 4096, hint)
+    try:
+        payload = TextRequest.model_validate_json(body)
+    except ValidationError as error:
+        first = error.errors()[0]
+        if first["type"] == "json_invalid":
+            raise ApiError(400, "invalid_json", "The request body is not valid JSON.") from None
+        raise ApiError(
+            422, "invalid_request", "Send JSON like {\"text\": \"...your log...\"}."
+        ) from None
+
+    size = len(payload.text.encode("utf-8"))
+    if size > settings.max_paste_bytes:
+        raise too_large(settings.max_paste_bytes, hint)
+    return await _analyze(request, payload.text, SourceInfo(
+        type="paste", filename=None, bytes=size, encoding="utf-8", warnings=[]
+    ))
+
+
+@router.post(
+    "/analyze/file",
+    response_model=AnalyzeResponse,
+    summary="Analyze an uploaded log file",
+    openapi_extra=_FILE_BODY,
+)
+async def analyze_file(
+    request: Request,
+    filename: str | None = Query(None, max_length=255, description="Original file name, used to check the type."),
+) -> AnalyzeResponse:
+    settings = request.app.state.settings
+    name = clean_filename(filename)
+    check_extension(name)  # refuse unsupported types before reading the body
+
+    data = await read_limited_body(request, settings.max_upload_bytes)
+    decoded = decode_log(data)
+    return await _analyze(request, decoded.text, SourceInfo(
+        type="file",
+        filename=name,
+        bytes=len(data),
+        encoding=decoded.encoding,
+        warnings=decoded.warnings,
+    ))
+
+
+async def _analyze(request: Request, text: str, source: SourceInfo) -> AnalyzeResponse:
+    if not text.strip():
+        raise ApiError(400, "empty_input", "No log text was received. Paste or upload a log.")
+    settings = request.app.state.settings
+    analysis = await request.app.state.gate.run(analyze, text, settings.max_lines)
+    return AnalyzeResponse(source=source, analysis=analysis)
