@@ -13,18 +13,24 @@ from logdoctor.cpptrace import (
     SAN_NONE,
     SAN_OPEN,
     continues_sanitizer_report,
-    detect_cpp,
     is_frame,
     next_sanitizer_state,
     opens_sanitizer_report,
 )
-from logdoctor.gotrace import detect_go, is_goroutine_header
+from logdoctor.detectors import detect_trace
+from logdoctor.gotrace import is_goroutine_header
 from logdoctor.header import MAX_MESSAGE_CHARS, Header, parse_header
-from logdoctor.javatrace import detect_java, looks_like_java_exception
+from logdoctor.javatrace import looks_like_java_exception
 from logdoctor.levels import WARNING_RANK, rank
 from logdoctor.models import LogEntry
-from logdoctor.nodetrace import detect_node, looks_like_js_exception
-from logdoctor.pytrace import CHAIN_MARKERS, TRACEBACK_START, detect_python
+from logdoctor.nodetrace import looks_like_js_exception
+from logdoctor.pytrace import CHAIN_MARKERS, TRACEBACK_START
+from logdoctor.structured import (
+    StructuredRecord,
+    detect_csv,
+    parse_csv_line,
+    parse_json_line,
+)
 
 MAX_TEXT_CHARS = 4000
 STRUCTURED_RATIO = 0.25  # share of top-level lines that must look like log records
@@ -42,9 +48,18 @@ _EXCEPTION_NAME = re.compile(r"\b([A-Za-z_][\w.]*(?:Error|Exception))\b")
 class _Draft:
     """A record being assembled."""
 
-    __slots__ = ("start", "end", "header", "level", "inferred", "lines", "traceback_open", "go_trace", "go_open", "san_state")
+    __slots__ = ("start", "end", "header", "level", "inferred", "lines", "traceback_open", "go_trace", "go_open", "san_state", "record")
 
-    def __init__(self, index: int, line: str, header: Header | None, *, is_traceback: bool):
+    def __init__(
+        self,
+        index: int,
+        line: str,
+        header: Header | None,
+        *,
+        is_traceback: bool,
+        record: StructuredRecord | None = None,
+    ):
+        self.record = record  # set for JSON and CSV lines
         self.start = index
         self.end = index
         self.header = header
@@ -71,7 +86,7 @@ class _Draft:
 
 def build_entries(lines: list[str], first_line_no: int = 1) -> list[LogEntry]:
     """Group `lines` into records. `first_line_no` is the number of lines[0]."""
-    headers = [parse_header(line) for line in lines]
+    headers, records, skipped = _read_lines(lines)
     top_level = sum(1 for line in lines if line.strip() and line[0] not in " \t")
     strong = sum(1 for header in headers if header and header.strong)
     structured = strong > 0 and strong >= STRUCTURED_RATIO * top_level
@@ -80,6 +95,8 @@ def build_entries(lines: list[str], first_line_no: int = 1) -> list[LogEntry]:
     current: _Draft | None = None
 
     for index, line in enumerate(lines):
+        if index in skipped:
+            continue  # the header row of a CSV log
         if not line.strip():
             if current:
                 current.go_open = False
@@ -104,7 +121,7 @@ def build_entries(lines: list[str], first_line_no: int = 1) -> list[LogEntry]:
                 starts = False
 
         if starts or current is None:
-            current = _Draft(index, line, header, is_traceback=is_traceback)
+            current = _Draft(index, line, header, is_traceback=is_traceback, record=records.get(index))
             drafts.append(current)
             if is_goroutine_header(line):
                 current.go_trace = current.go_open = True
@@ -125,6 +142,26 @@ def build_entries(lines: list[str], first_line_no: int = 1) -> list[LogEntry]:
             current.traceback_open = False  # that was the exception line
 
     return [_finish(draft, first_line_no) for draft in drafts]
+
+
+def _read_lines(lines: list[str]) -> tuple[list[Header | None], dict[int, StructuredRecord], set[int]]:
+    """Parse every line's header. JSON and CSV lines are read field by field."""
+    csv_found = detect_csv(lines)
+    skipped = {csv_found[0]} if csv_found else set()
+    headers: list[Header | None] = []
+    records: dict[int, StructuredRecord] = {}
+    for index, line in enumerate(lines):
+        record = None
+        if csv_found and index > csv_found[0]:
+            record = parse_csv_line(csv_found[1], line)
+        if record is None:
+            record = parse_json_line(line)
+        if record is None:
+            headers.append(parse_header(line))
+            continue
+        records[index] = record
+        headers.append(Header(record.timestamp, record.level, record.message, True))
+    return headers, records, skipped
 
 
 def _continues_trace(line: str, upcoming: list[str], current: _Draft) -> bool:
@@ -148,6 +185,7 @@ def _continues_trace(line: str, upcoming: list[str], current: _Draft) -> bool:
 def _finish(draft: _Draft, first_line_no: int) -> LogEntry:
     full_text = "\n".join(draft.lines)
     header = draft.header
+    record = draft.record
     message = header.message if header else draft.lines[0].strip()[:MAX_MESSAGE_CHARS]
 
     entry = LogEntry(
@@ -155,27 +193,28 @@ def _finish(draft: _Draft, first_line_no: int) -> LogEntry:
         end_line=first_line_no + draft.end,
         timestamp=header.timestamp if header else None,
         level=draft.level,
-        level_inferred=draft.inferred,
+        level_inferred=draft.inferred or bool(record and record.level_inferred),
         message=message,
         text=_shorten(full_text),
     )
 
-    language, trace = "python", detect_python(full_text)
-    if trace is None:
-        language, trace = "java", detect_java(full_text)
-    if trace is None:
-        language, trace = "javascript", detect_node(full_text)
-    if trace is None:
-        language, trace = "go", detect_go(full_text)
-    if trace is None:
-        language, trace = "cpp", detect_cpp(full_text)
-    if trace:
+    # For a JSON or CSV line the stack lives in a field (plus any lines after it);
+    # for plain text it is the record itself.
+    source = full_text
+    if record:
+        source = "\n".join(part for part in (record.trace_text, *draft.lines[1:]) if part)
+    found = detect_trace(source) if source else None
+    if found:
+        language, trace = found
         entry.language = language
         entry.exception_type = trace.exception_type
         entry.exception_message = trace.exception_message
         entry.frames = trace.frames[-10:]
         if entry.level == "UNKNOWN":
             entry.level, entry.level_inferred = "ERROR", True
+    elif record and (record.exception_type or record.exception_message):
+        entry.exception_type = record.exception_type
+        entry.exception_message = record.exception_message
     else:
         named = _EXCEPTION_NAME.search(message)
         if named:

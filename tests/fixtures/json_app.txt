@@ -1,0 +1,9 @@
+{"level":30,"time":1714557600000,"pid":9,"msg":"server listening","port":3000}
+{"level":50,"time":1714557604200,"pid":9,"reqId":"req-8812","msg":"request failed","err":{"type":"TypeError","message":"Cannot read properties of undefined (reading 'id')","stack":"TypeError: Cannot read properties of undefined (reading 'id')\n    at getUser (/srv/app/users.js:42:17)\n    at /srv/app/server.js:10:5"}}
+{"level":40,"time":1714557605000,"pid":9,"msg":"slow response","durationMs":1800}
+{"level":50,"time":1714557664200,"pid":9,"reqId":"req-9020","msg":"request failed","err":{"type":"TypeError","message":"Cannot read properties of undefined (reading 'id')","stack":"TypeError: Cannot read properties of undefined (reading 'id')\n    at getUser (/srv/app/users.js:42:17)\n    at /srv/app/server.js:10:5"}}
+{"@timestamp":"2024-05-01T10:02:00.123Z","log.level":"error","message":"payment declined for order 5521","error":{"type":"PaymentError","message":"card_declined"},"service":{"name":"shop"}}
+{"@timestamp":"2024-05-01T10:02:30.500Z","log.level":"error","message":"payment declined for order 7710","error":{"type":"PaymentError","message":"card_declined"},"service":{"name":"shop"}}
+{"timestamp":"2024-05-01T10:03:00Z","level":"warning","event":"cache miss ratio high","ratio":0.91,"logger":"app.cache"}
+{"timestamp":"2024-05-01T10:04:00Z","level":"error","event":"unhandled","exception":"Traceback (most recent call last):\n  File \"/srv/app/api.py\", line 88, in get_profile\n    return profile[\"user_id\"]\nKeyError: 'user_id'\n"}
+{"just":"data","not":"a log line","n":5}
