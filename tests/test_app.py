@@ -86,3 +86,8 @@ def test_page_uses_relative_asset_paths():
     assert 'src="static/app.js"' in html and 'href="static/style.css"' in html
     assert 'src="/static' not in html
     assert client.get("/static/config.js").status_code == 200
+
+
+def test_frontend_renders_causes_as_text():
+    source = client.get("/static/app.js").text
+    assert "renderCauses" in source and "cause.steps" in source

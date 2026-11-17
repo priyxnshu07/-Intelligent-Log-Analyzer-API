@@ -72,3 +72,19 @@ def test_binary_garbage_does_not_crash(tmp_path):
     path = tmp_path / "bin.dat"
     path.write_bytes(bytes(range(256)) * 20)
     assert main([str(path)]) == 0
+
+
+def test_report_shows_probable_cause_and_steps(tmp_path, capsys):
+    path = write(tmp_path, "2024-05-01 10:00:00 ERROR Error: connect ECONNREFUSED 127.0.0.1:5432\n")
+    main([path])
+    out = capsys.readouterr().out
+    assert "probable cause: Nothing is listening" in out
+    assert "1. Check the host and port" in out
+    assert "not proof" in out
+
+
+def test_report_without_matching_rule_has_no_cause_section(tmp_path, capsys):
+    path = write(tmp_path, "2024-05-01 10:00:00 ERROR payment declined for order 5\n")
+    main([path])
+    out = capsys.readouterr().out
+    assert "probable cause" not in out and "not proof" not in out

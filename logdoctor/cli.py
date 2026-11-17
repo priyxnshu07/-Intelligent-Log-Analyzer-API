@@ -45,6 +45,14 @@ def format_report(result: Analysis, top: int = 10) -> str:
         lines.append(f"   at line(s): {shown}{more}")
         if g.exception_type:
             lines.append(f"   exception: {g.exception_type}")
+        for number, cause in enumerate(g.causes):
+            if number == 0:
+                lines.append(f"   probable cause: {cause.cause}")
+                lines.extend(f"     {n}. {step}" for n, step in enumerate(cause.steps, 1))
+            else:
+                lines.append(f"   also possible: {cause.cause}")
+    if any(g.causes for g in result.groups[:top]):
+        lines.append("\nCauses are hints from fixed rules, not proof. Check them against the log.")
     if len(result.groups) > top:
         lines.append(f"\n... and {len(result.groups) - top} more (use --top or --json)")
     return "\n".join(lines)
