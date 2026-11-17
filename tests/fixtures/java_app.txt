@@ -1,0 +1,25 @@
+2024-05-01 10:00:00,100 INFO  [main] com.acme.App - Starting
+2024-05-01 10:00:03,200 ERROR [http-nio-8080-exec-1] com.acme.OrderService - Failed to place order 1001
+java.lang.IllegalStateException: Could not process order
+	at com.acme.OrderService.place(OrderService.java:88)
+	at com.acme.OrderController.create(OrderController.java:41)
+	at java.base/java.lang.Thread.run(Thread.java:829)
+Caused by: java.sql.SQLTransientConnectionException: pool - Connection is not available, request timed out after 30000ms.
+	at com.zaxxer.hikari.pool.HikariPool.createTimeoutException(HikariPool.java:696)
+	at com.zaxxer.hikari.pool.HikariPool.getConnection(HikariPool.java:197)
+	at com.acme.OrderRepository.save(OrderRepository.java:25)
+	... 12 more
+2024-05-01 10:00:09,300 WARN  [main] com.acme.Cache - Eviction took 1800ms
+2024-05-01 10:01:03,200 ERROR [http-nio-8080-exec-2] com.acme.OrderService - Failed to place order 1002
+java.lang.IllegalStateException: Could not process order
+	at com.acme.OrderService.place(OrderService.java:88)
+	at com.acme.OrderController.create(OrderController.java:41)
+Caused by: java.sql.SQLTransientConnectionException: pool - Connection is not available, request timed out after 30001ms.
+	at com.zaxxer.hikari.pool.HikariPool.createTimeoutException(HikariPool.java:696)
+	at com.zaxxer.hikari.pool.HikariPool.getConnection(HikariPool.java:197)
+	at com.acme.OrderRepository.save(OrderRepository.java:25)
+	... 12 more
+2024-05-01 10:02:00,000 ERROR [main] com.acme.App - Unexpected
+java.lang.NullPointerException: Cannot invoke "String.length()" because "name" is null
+	at com.acme.Util.clean(Util.java:12)
+	at com.acme.App.main(App.java:30)

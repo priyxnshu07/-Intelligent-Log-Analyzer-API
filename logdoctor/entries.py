@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 
 from logdoctor.header import MAX_MESSAGE_CHARS, Header, parse_header
+from logdoctor.javatrace import detect_java, looks_like_java_exception
 from logdoctor.levels import WARNING_RANK, rank
 from logdoctor.models import LogEntry
 from logdoctor.pytrace import CHAIN_MARKERS, TRACEBACK_START, detect_python
@@ -80,6 +81,8 @@ def build_entries(lines: list[str], first_line_no: int = 1) -> list[LogEntry]:
         else:
             top = line[0] not in " \t"
             starts = top and not (current and current.traceback_open)
+            if starts and current and _continues_java_trace(line, current):
+                starts = False
 
         if starts or current is None:
             current = _Draft(index, line, header, is_traceback=is_traceback)
@@ -93,6 +96,13 @@ def build_entries(lines: list[str], first_line_no: int = 1) -> list[LogEntry]:
             current.traceback_open = False  # that was the exception line
 
     return [_finish(draft, first_line_no) for draft in drafts]
+
+
+def _continues_java_trace(line: str, current: _Draft) -> bool:
+    """A Java exception line right after an error line belongs to that error."""
+    if line.startswith("Caused by:"):
+        return True
+    return rank(current.level) >= WARNING_RANK and looks_like_java_exception(line)
 
 
 def _finish(draft: _Draft, first_line_no: int) -> LogEntry:
@@ -110,12 +120,14 @@ def _finish(draft: _Draft, first_line_no: int) -> LogEntry:
         text=_shorten(full_text),
     )
 
-    python_error = detect_python(full_text)
-    if python_error:
-        entry.language = "python"
-        entry.exception_type = python_error.exception_type
-        entry.exception_message = python_error.exception_message
-        entry.frames = python_error.frames[-10:]
+    language, trace = "python", detect_python(full_text)
+    if trace is None:
+        language, trace = "java", detect_java(full_text)
+    if trace:
+        entry.language = language
+        entry.exception_type = trace.exception_type
+        entry.exception_message = trace.exception_message
+        entry.frames = trace.frames[-10:]
         if entry.level == "UNKNOWN":
             entry.level, entry.level_inferred = "ERROR", True
     else:

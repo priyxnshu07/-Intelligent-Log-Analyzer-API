@@ -44,10 +44,10 @@ def normalize_message(message: str) -> str:
 def fingerprint(entry: LogEntry) -> tuple[str, str]:
     """Return (group id, masked pattern) for a log record."""
     exception = entry.exception_type or ""
-    if entry.language == "python":
+    if entry.language:
         # The exception and where it was raised matter, not the log wording.
         masked = normalize_message(entry.exception_message or "")
-        parts = ["python", exception, masked, *entry.frames[-3:]]
+        parts = [entry.language, exception, masked, *entry.frames[-3:]]
         pattern = f"{exception}: {masked}" if exception and masked else (exception or masked)
     else:
         masked = normalize_message(entry.message)
@@ -59,7 +59,7 @@ def fingerprint(entry: LogEntry) -> tuple[str, str]:
 
 def title_for(entry: LogEntry) -> str:
     """Human-readable title using the real (unmasked) text of one occurrence."""
-    if entry.language == "python" and entry.exception_type:
+    if entry.language and entry.exception_type:
         detail = f": {entry.exception_message}" if entry.exception_message else ""
         return f"{entry.exception_type}{detail}"[:200]
     return entry.message[:200]

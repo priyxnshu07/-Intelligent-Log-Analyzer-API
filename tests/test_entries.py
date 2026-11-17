@@ -123,7 +123,8 @@ java.lang.NullPointerException: boom
     )
     assert len(entries) == 2
     assert entries[0].end_line == 4
-    assert entries[0].exception_type is None  # the Java detector arrives in a later step
+    assert entries[0].language == "java"
+    assert entries[0].exception_type == "java.lang.NullPointerException"
 
 
 def test_plain_text_gives_one_record_per_line_and_infers_failures():
