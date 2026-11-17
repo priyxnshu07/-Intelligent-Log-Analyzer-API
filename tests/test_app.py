@@ -70,17 +70,8 @@ def test_settings_reject_bad_values(monkeypatch, bad):
 
 
 def test_static_assets_served():
-    for path in ("/static/app.js", "/static/style.css", "/static/samples/python-web-app.txt"):
+    for path in ("/static/app.js", "/static/style.css"):
         assert client.get(path).status_code == 200, path
-
-
-def test_sample_log_has_problems():
-    from logdoctor import analyze
-
-    text = client.get("/static/samples/python-web-app.txt").text
-    result = analyze(text)
-    assert result.summary.group_count == 4
-    assert result.summary.languages == ["python"]
 
 
 def test_frontend_never_uses_unsafe_html_apis():
@@ -88,19 +79,6 @@ def test_frontend_never_uses_unsafe_html_apis():
     source = client.get("/static/app.js").text
     for banned in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval("):
         assert banned not in source, banned
-
-
-def test_sample_report_is_up_to_date():
-    # If this fails, run: python scripts/make_sample_report.py
-    import importlib.util
-    from pathlib import Path
-
-    path = Path(__file__).parent.parent / "scripts" / "make_sample_report.py"
-    spec = importlib.util.spec_from_file_location("make_sample_report", path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    committed = (Path(__file__).parent.parent / "app/static/sample-report.json").read_text()
-    assert committed == module.build()
 
 
 def test_page_uses_relative_asset_paths():

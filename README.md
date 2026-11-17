@@ -75,10 +75,9 @@ Exit codes: `0` ok, `1` the `--fail-on` level was reached, `2` bad input.
 
 ## Instant landing page (optional)
 
-The page shows a precomputed sample report the moment it loads, and a status
-line tells visitors whether the server is awake. Free hosts sleep when idle, so
-you can also serve the page from a static host that is always on (for example
-GitHub Pages) and let it call the API:
+A status line tells visitors whether the server is awake. Free hosts sleep when
+idle, so you can serve the page from a static host that is always on (for
+example GitHub Pages) and let it call the API:
 
 ```bash
 python scripts/build_site.py site https://your-api.onrender.com
@@ -90,9 +89,6 @@ On the API server, allow that page's address (nothing is allowed by default):
 ```
 LOGDOCTOR_CORS_ORIGINS=https://yourname.github.io
 ```
-
-If you change the engine or the sample log, run `python scripts/make_sample_report.py`.
-A test fails when the committed sample report is out of date.
 
 ## Limits
 
@@ -139,8 +135,8 @@ A free Render service goes to sleep after 15 minutes without traffic, and the fi
 - [x] **R1a** Analysis engine (`logdoctor/` package): generic log parsing, Python tracebacks, grouping, severity, frequency, timeline
 - [x] **R1b** API endpoints for pasted text and uploaded files, with the size limits
 - [x] **R1c** `logdoctor` command-line tool using the same engine
-- [x] **R2** Web page: paste, upload, sample logs, results, clear error messages
-- [x] **R2b** Instant landing page that loads even while the server is asleep
+- [x] **R2** Web page: paste, upload, results, clear error messages
+- [x] **R2b** Static landing page option with a server wake-up status line
 - [ ] **R3** Java, JavaScript/Node.js, Go and C++ parsers, plus JSON and CSV logs
 - [ ] **R4** Probable causes, debugging steps and downloadable report
 - [ ] **R5** Optional AI diagnosis with your own key (Groq, OpenAI, Anthropic)

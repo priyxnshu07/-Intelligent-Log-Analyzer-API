@@ -18,14 +18,12 @@
     <div class="row">
       <button id="analyze">Analyze</button>
       <label class="filebtn">Upload file<input id="file" type="file" hidden accept=".txt,.log,.json,.jsonl,.ndjson,.csv"></label>
-      <button id="sample" class="secondary">Try a sample</button>
       <span id="busy" class="muted"></span>
     </div>
     <div id="error" role="alert"></div>
   </section>
 
   <div id="results">
-    <div class="notice" id="sample-banner" style="display:none"></div>
     <section class="card"><h2>Summary</h2><div class="stats" id="stats"></div><div id="notices"></div></section>
     <section class="card"><h2>Timeline</h2><div id="timeline"></div><p class="muted" id="timeline-note"></p></section>
     <section class="card"><h2>Problems found</h2><div id="groups"></div></section>

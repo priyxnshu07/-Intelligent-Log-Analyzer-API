@@ -33,7 +33,6 @@
         showError(body && body.error ? body.error.message : "Something went wrong (" + response.status + ").");
         return;
       }
-      $("sample-banner").style.display = "none";
       render(body, true);
     } catch (e) {
       showError("Could not reach the server. If this is the free hosting, it may be waking up: wait a minute and try again.");
@@ -54,12 +53,6 @@
 
   function analyzeFile(file) {
     send(API + "/api/analyze/file?filename=" + encodeURIComponent(file.name), { method: "POST", body: file });
-  }
-
-  async function loadSample() {
-    const response = await fetch("static/samples/python-web-app.txt");
-    $("text").value = await response.text();
-    analyzeText();
   }
 
   function stat(label, value) {
@@ -130,19 +123,6 @@
     if (scroll) $("results").scrollIntoView({ behavior: "smooth" });
   }
 
-  // Show a precomputed report at once, so the page is useful before the
-  // server (which sleeps on free hosting) has woken up.
-  async function showSampleReport() {
-    try {
-      const response = await fetch("static/sample-report.json");
-      if (!response.ok) return;
-      render(await response.json(), false);
-      const banner = $("sample-banner");
-      banner.textContent = "This is a sample report, computed in advance. Paste or upload your own log above to analyze it.";
-      banner.style.display = "block";
-    } catch (e) { /* the page still works without the preview */ }
-  }
-
   // Ask the server if it is up. A sleeping free server needs about a minute.
   async function watchServer(attempt) {
     const status = $("server-status");
@@ -158,11 +138,9 @@
     setTimeout(() => watchServer(attempt + 1), 5000);
   }
 
-  showSampleReport();
   watchServer(0);
 
   $("analyze").addEventListener("click", analyzeText);
-  $("sample").addEventListener("click", loadSample);
   $("file").addEventListener("change", (event) => {
     const file = event.target.files[0];
     if (file) analyzeFile(file);

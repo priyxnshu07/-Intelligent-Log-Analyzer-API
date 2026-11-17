@@ -22,7 +22,6 @@ def test_build_site_layout(tmp_path):
     load_build_site()(out, "https://api.example.com/")
     assert (out / "index.html").exists()
     assert (out / "static/app.js").exists()
-    assert (out / "static/sample-report.json").exists()
     assert (out / ".nojekyll").exists()
     assert not (out / "static/index.html").exists()
     assert (out / "static/config.js").read_text() == 'window.LOGDOCTOR_API = "https://api.example.com";\n'

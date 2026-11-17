@@ -2,7 +2,7 @@
 
     python scripts/build_site.py site https://your-api.onrender.com
 
-The page then shows the sample report instantly and talks to the API at the
+The page then talks to the API at the
 given address. The API must list the page's address in LOGDOCTOR_CORS_ORIGINS.
 """
 
