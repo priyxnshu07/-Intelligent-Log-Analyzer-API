@@ -38,6 +38,27 @@ What it does today:
 
 Known gaps, planned for R3: Java, JavaScript/Node.js, Go and C++ errors are grouped by their message, but their stack traces are not understood yet, and JSON logs are not parsed field by field.
 
+## The API
+
+Interactive docs are at `/docs` when the server is running.
+
+```bash
+# Paste: send JSON
+curl -s localhost:8000/api/analyze/text \
+  -H 'content-type: application/json' \
+  -d '{"text": "2024-05-01 10:00:01 ERROR db timeout"}'
+
+# File: send the raw bytes (the name is only used to check the file type)
+curl -s --data-binary @app.log "localhost:8000/api/analyze/file?filename=app.log"
+
+# Current limits and accepted file types
+curl -s localhost:8000/api/limits
+```
+
+Errors always look like `{"error": {"code": "...", "message": "..."}}`.
+Too large is `413`, a wrong file type is `415`, and a busy server is `503`
+with `Retry-After`. Responses are sent with `Cache-Control: no-store`.
+
 ## Limits
 
 These protect a small free server. They can be changed with environment variables (see `.env.example`).
@@ -81,7 +102,7 @@ A free Render service goes to sleep after 15 minutes without traffic, and the fi
 
 - [x] **R0** Foundation: stateless FastAPI app, `/health`, `$PORT`, Render config, tests, CI
 - [x] **R1a** Analysis engine (`logdoctor/` package): generic log parsing, Python tracebacks, grouping, severity, frequency, timeline
-- [ ] **R1b** API endpoints for pasted text and uploaded files, with the size limits
+- [x] **R1b** API endpoints for pasted text and uploaded files, with the size limits
 - [ ] **R1c** `logdoctor` command-line tool using the same engine
 - [ ] **R2** Web page: paste, upload, sample logs, results, clear error messages
 - [ ] **R2b** Instant landing page that loads even while the server is asleep
