@@ -118,7 +118,7 @@ A free Render service goes to sleep after 15 minutes without traffic, and the fi
 - [x] **R1a** Analysis engine (`logdoctor/` package): generic log parsing, Python tracebacks, grouping, severity, frequency, timeline
 - [x] **R1b** API endpoints for pasted text and uploaded files, with the size limits
 - [x] **R1c** `logdoctor` command-line tool using the same engine
-- [ ] **R2** Web page: paste, upload, sample logs, results, clear error messages
+- [x] **R2** Web page: paste, upload, sample logs, results, clear error messages
 - [ ] **R2b** Instant landing page that loads even while the server is asleep
 - [ ] **R3** Java, JavaScript/Node.js, Go and C++ parsers, plus JSON and CSV logs
 - [ ] **R4** Probable causes, debugging steps and downloadable report
