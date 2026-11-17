@@ -80,10 +80,11 @@ class Summary:
     level_counts: dict[str, int]
     error_count: int  # ERROR and CRITICAL entries
     warning_count: int
-    group_count: int
+    group_count: int  # all problem groups found, even if only the top ones are returned
     first_timestamp: datetime | None
     last_timestamp: datetime | None
     languages: list[str]
+    groups_omitted: int = 0  # groups found but not returned (only the top MAX_GROUPS are kept)
 
 
 @dataclass

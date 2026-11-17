@@ -10,6 +10,7 @@ from app.ingest import ALLOWED_EXTENSIONS, check_extension, clean_filename, deco
 from app.limits import format_bytes, read_limited_body, too_large
 from app.schemas import AnalyzeResponse, SourceInfo, TextRequest
 from logdoctor import analyze
+from logdoctor.report import render_markdown
 
 
 def no_store(response: Response) -> None:
@@ -98,6 +99,38 @@ async def analyze_file(
         encoding=decoded.encoding,
         warnings=decoded.warnings,
     ))
+
+
+_REPORT_BODY = {
+    "requestBody": {
+        "required": True,
+        "description": "The JSON returned by /api/analyze/text or /api/analyze/file.",
+        "content": {"application/json": {"schema": AnalyzeResponse.model_json_schema()}},
+    }
+}
+
+
+@router.post("/report", summary="Make a Markdown report from an analysis result", openapi_extra=_REPORT_BODY)
+async def make_report(request: Request) -> Response:
+    settings = request.app.state.settings
+    body = await read_limited_body(request, settings.max_upload_bytes)
+    try:
+        data = AnalyzeResponse.model_validate_json(body)
+    except ValidationError as error:
+        if error.errors()[0]["type"] == "json_invalid":
+            raise ApiError(400, "invalid_json", "The request body is not valid JSON.") from None
+        raise ApiError(
+            422, "invalid_request", "Send the JSON that /api/analyze/text or /api/analyze/file returned."
+        ) from None
+    markdown = render_markdown(data.analysis, data.source.filename)
+    return Response(
+        markdown,
+        media_type="text/markdown; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="log-report.md"',
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 async def _analyze(request: Request, text: str, source: SourceInfo) -> AnalyzeResponse:

@@ -6,12 +6,14 @@ Works offline and sends nothing anywhere. Reads a file or standard input.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
 from logdoctor import __version__, analyze
 from logdoctor.analyze import DEFAULT_MAX_LINES
 from logdoctor.levels import LEVEL_RANK, rank
 from logdoctor.models import Analysis
+from logdoctor.report import render_markdown
 
 EXIT_OK = 0
 EXIT_FAIL_ON = 1  # --fail-on threshold reached
@@ -65,6 +67,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("file", nargs="?", default="-", help="log file, or - for standard input (default)")
     p.add_argument("--json", action="store_true", help="print the full analysis as JSON")
+    p.add_argument("--markdown", action="store_true", help="print a Markdown report (save it with > report.md)")
     p.add_argument("--top", type=int, default=10, help="groups to show in the text report (default 10)")
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="analyze only the most recent N lines")
     p.add_argument(
@@ -78,6 +81,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.json and args.markdown:
+        print("logdoctor: use either --json or --markdown, not both", file=sys.stderr)
+        return EXIT_USAGE
     if args.top < 1 or args.max_lines < 1:
         print("logdoctor: --top and --max-lines must be at least 1", file=sys.stderr)
         return EXIT_USAGE
@@ -92,7 +98,12 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_USAGE
 
     result = analyze(text, args.max_lines)
-    print(result.to_json(indent=2) if args.json else format_report(result, args.top))
+    if args.json:
+        print(result.to_json(indent=2))
+    elif args.markdown:
+        print(render_markdown(result, None if args.file == "-" else os.path.basename(args.file)))
+    else:
+        print(format_report(result, args.top))
 
     if args.fail_on:
         threshold = LEVEL_RANK[args.fail_on.upper()]

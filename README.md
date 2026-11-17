@@ -119,6 +119,22 @@ the same answer, and no AI is involved.
 - To add a rule, add an entry to `RULES` and an example for it in `tests/test_diagnose.py`;
   a test fails if a rule has no example.
 
+## Reports
+
+Download the result as a Markdown report (the **Download report** button), or
+as JSON. From the command line:
+
+```bash
+logdoctor app.log --markdown > report.md
+```
+
+The API also has `POST /api/report`: send it the JSON that the analyze
+endpoints returned and it answers with the report as a file. The report has a
+summary, a timeline, every problem group with its probable causes and first
+occurrence, and a short note on how to read it. Text from the log is escaped
+and code-fenced so it cannot turn into links or HTML. The same analysis always
+gives the same report (it contains no clock time).
+
 ## Limits
 
 These protect a small free server. They can be changed with environment variables (see `.env.example`).
@@ -129,7 +145,10 @@ These protect a small free server. They can be changed with environment variable
 | Pasted text | 1 MB |
 | Lines analyzed | 50,000 |
 | Analyses running at once | 2 |
-| Requests per minute per visitor | 20 analyses, 5 AI calls |
+| Requests per minute per visitor | 20 analyses, 5 AI calls (planned for R6, not enforced yet) |
+| Problem groups returned | 500 (the total is still reported) |
+| Groups that get probable causes | 100, at most 3 causes each |
+| Groups in a Markdown report | 50 in detail |
 
 ## Run locally
 
@@ -167,7 +186,7 @@ A free Render service goes to sleep after 15 minutes without traffic, and the fi
 - [x] **R2** Web page: paste, upload, results, clear error messages
 - [x] **R2b** Static landing page option with a server wake-up status line
 - [x] **R3** Java, JavaScript/Node.js, Go and C++ parsers, plus JSON and CSV logs
-- [ ] **R4** Probable causes and debugging steps (done), downloadable report (next)
+- [x] **R4** Probable causes, debugging steps and downloadable report
 - [ ] **R5** Optional AI diagnosis with your own key (Groq, OpenAI, Anthropic)
 - [ ] **R6** Rate limits, ZIP upload with safe-extraction limits, security hardening, live check
 - [ ] **R7** Command-line tool and a GitHub Actions workflow to use it from your own project
