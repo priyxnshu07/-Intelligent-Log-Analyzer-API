@@ -14,7 +14,7 @@ This project grew out of an earlier "Intelligent Log Analyzer API". That version
 - **AI is optional and bring-your-own-key.** If you add your own Groq, OpenAI or Anthropic key, you can ask for an AI diagnosis. The key is used for that one request and is never stored or logged. Your log excerpts are sent to the provider you choose, so don't send anything you wouldn't share with them.
 - **Zero cost to run.** Designed for a free Render web service.
 
-Languages: Python, Java, JavaScript/Node.js and Go so far. C++ comes next.
+Languages: Python, Java, JavaScript/Node.js, Go and C/C++.
 
 ## The engine
 
@@ -36,7 +36,7 @@ What it does today:
 - Counts failures over time in buckets sized to fit the log.
 - If a log is longer than the line limit, it analyzes the most recent lines and says so.
 
-Known gaps, planned for R3: C++ errors are grouped by their message, but their stack traces are not understood yet, and JSON logs are not parsed field by field. Java traces are understood (the root `Caused by` is what gets grouped), except the two-line `java.util.logging` format. Node.js traces are understood (the last `[cause]` is what gets grouped); Firefox-style `fn@file:line` traces are not. Go panics and fatal errors are understood (the first goroutine, without `runtime` frames); plain Go error log lines are grouped by message.
+Known gaps, planned for R3: JSON and CSV logs are not parsed field by field yet. Java traces are understood (the root `Caused by` is what gets grouped), except the two-line `java.util.logging` format. Node.js traces are understood (the last `[cause]` is what gets grouped); Firefox-style `fn@file:line` traces are not. Go panics and fatal errors are understood (the first goroutine, without `runtime` frames); plain Go error log lines are grouped by message. C/C++ crashes are understood: `terminate called` with `what()`, assertion failures, signal lines such as `Caught signal 11 (SIGSEGV)`, AddressSanitizer/ThreadSanitizer/UBSan reports, and frames from glibc `backtrace_symbols`, gdb and the sanitizers. C++ names are not demangled (`_ZN3Foo3barEv` stays as it is).
 
 ## The API
 
@@ -137,7 +137,7 @@ A free Render service goes to sleep after 15 minutes without traffic, and the fi
 - [x] **R1c** `logdoctor` command-line tool using the same engine
 - [x] **R2** Web page: paste, upload, results, clear error messages
 - [x] **R2b** Static landing page option with a server wake-up status line
-- [ ] **R3** (in progress: Python, Java, Node.js and Go done) Java, JavaScript/Node.js, Go and C++ parsers, plus JSON and CSV logs
+- [ ] **R3** (in progress: all five languages done, JSON and CSV left) Java, JavaScript/Node.js, Go and C++ parsers, plus JSON and CSV logs
 - [ ] **R4** Probable causes, debugging steps and downloadable report
 - [ ] **R5** Optional AI diagnosis with your own key (Groq, OpenAI, Anthropic)
 - [ ] **R6** Rate limits, ZIP upload with safe-extraction limits, security hardening, live check

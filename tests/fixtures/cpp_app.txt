@@ -1,0 +1,28 @@
+2024-05-01 10:00:00 INFO  engine started, pid 4121
+2024-05-01 10:00:07 ERROR worker 3 crashed
+terminate called after throwing an instance of 'std::runtime_error'
+  what():  config file /etc/engine/cfg.yaml missing
+2024-05-01 10:00:09 ERROR worker 4 crashed
+terminate called after throwing an instance of 'std::runtime_error'
+  what():  config file /etc/engine/cfg.yaml missing
+2024-05-01 10:01:00 WARN  queue depth 912 above threshold
+2024-05-01 10:02:00 ERROR crash handler: Caught signal 11 (SIGSEGV)
+./engine(_ZN6Engine5drainEv+0x4a) [0x55d1c8a0e12a]
+./engine(_ZN6Engine3runEv+0x21) [0x55d1c8a0e2f1]
+/lib/x86_64-linux-gnu/libc.so.6(+0x29d90) [0x7f2a1c829d90]
+2024-05-01 10:03:00 INFO  restarting
+=================================================================
+==4121==ERROR: AddressSanitizer: heap-use-after-free on address 0x602000000010 at pc 0x0000004a1b2c bp 0x7ffd1 sp 0x7ffd0
+READ of size 4 at 0x602000000010 thread T0
+    #0 0x4a1b2c in Engine::drain() /srv/engine/engine.cpp:88:12
+    #1 0x4a2000 in main /srv/engine/main.cpp:14:5
+    #2 0x7f2a1c829d8f in __libc_start_call_main (/lib/x86_64-linux-gnu/libc.so.6+0x29d8f)
+
+0x602000000010 is located 0 bytes inside of 4-byte region [0x602000000010,0x602000000014)
+freed by thread T0 here:
+    #0 0x4a0000 in operator delete(void*) (/srv/engine/engine+0x4a0000)
+    #1 0x4a1a00 in Engine::reset() /srv/engine/engine.cpp:70:3
+
+SUMMARY: AddressSanitizer: heap-use-after-free /srv/engine/engine.cpp:88:12 in Engine::drain()
+==4121==ABORTING
+2024-05-01 10:04:00 ERROR engine: engine.cpp:120: void Engine::tick(int): Assertion `budget > 0' failed.
