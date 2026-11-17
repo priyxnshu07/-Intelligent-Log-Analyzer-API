@@ -120,6 +120,44 @@
 
   let lastResult = null;
 
+  // Recent analyses: counts and a few titles, kept in this browser only. The log itself is never stored.
+  const HISTORY_KEY = "logdoctor.history.v1";
+  const HISTORY_MAX = 10;
+  function loadHistory() {
+    try {
+      const list = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+      return Array.isArray(list) ? list.filter((x) => x && typeof x === "object").slice(0, HISTORY_MAX) : [];
+    } catch (e) { return []; }
+  }
+  function saveHistory(list) {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch (e) { /* storage blocked or full: skip */ }
+  }
+  function addHistory(data) {
+    const s = data.analysis.summary;
+    const entry = {
+      at: new Date().toISOString(),
+      name: data.source.filename || (data.source.type === "paste" ? "pasted text" : "log"),
+      lines: s.lines_analyzed, errors: s.error_count, warnings: s.warning_count, groups: s.group_count,
+      top: data.analysis.groups.slice(0, 3).map((g) => String(g.title).slice(0, 120)),
+    };
+    saveHistory([entry].concat(loadHistory()).slice(0, HISTORY_MAX));
+    renderHistory();
+  }
+  function renderHistory() {
+    const list = loadHistory();
+    const holder = $("history");
+    holder.replaceChildren();
+    $("history-card").hidden = list.length === 0;
+    for (const item of list) {
+      const row = el("div", "history-item");
+      const when = String(item.at || "").replace("T", " ").slice(0, 16);
+      row.appendChild(el("strong", "", String(item.name || "log")));
+      row.appendChild(el("span", "muted", "  " + when + " UTC  -  " + Number(item.errors) + " errors, " + Number(item.warnings) + " warnings, " + Number(item.groups) + " problem groups"));
+      if (Array.isArray(item.top) && item.top.length) row.appendChild(el("div", "muted", item.top.map(String).join("  |  ")));
+      holder.appendChild(row);
+    }
+  }
+
   function saveBlob(blob, name) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -178,6 +216,7 @@
     if (s.groups_omitted) notices.appendChild(el("div", "notice", "This log has " + s.group_count + " different problems. Only the " + a.groups.length + " most important are shown."));
     if (!a.groups.length) groups.appendChild(el("p", "muted", "No warnings or errors found in this log."));
     for (const g of a.groups) groups.appendChild(renderGroup(g));
+    if (scroll) addHistory(data);
     $("results").style.display = "block";
     if (scroll) $("results").scrollIntoView({ behavior: "smooth" });
   }
@@ -242,6 +281,11 @@
   }
 
   watchServer(0);
+  renderHistory();
+  $("history-clear").addEventListener("click", () => {
+    try { localStorage.removeItem(HISTORY_KEY); } catch (e) { /* ignore */ }
+    renderHistory();
+  });
 
   $("analyze").addEventListener("click", analyzeText);
   $("dl-report").addEventListener("click", downloadReport);

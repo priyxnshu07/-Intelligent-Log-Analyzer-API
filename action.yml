@@ -1,0 +1,38 @@
+name: Universal Log Doctor
+description: Group and explain the errors in a log file. Runs on the runner, uploads nothing, needs no key.
+branding:
+  icon: activity
+  color: green
+inputs:
+  log-path:
+    description: Path to the log file (txt, log, json, jsonl, csv).
+    required: true
+  fail-on:
+    description: Fail the job if a problem at or above this level is found (warning, error or critical). Empty means never fail.
+    required: false
+    default: ""
+  max-lines:
+    description: Analyze only the most recent N lines.
+    required: false
+    default: "50000"
+  report-path:
+    description: Where to write the Markdown report.
+    required: false
+    default: log-report.md
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install Log Doctor
+      shell: bash
+      run: python -m pip install --quiet "$GITHUB_ACTION_PATH"
+    - name: Analyze the log
+      shell: bash
+      env:
+        LOGDOCTOR_LOG_PATH: ${{ inputs.log-path }}
+        LOGDOCTOR_FAIL_ON: ${{ inputs.fail-on }}
+        LOGDOCTOR_MAX_LINES: ${{ inputs.max-lines }}
+        LOGDOCTOR_REPORT: ${{ inputs.report-path }}
+      run: bash "$GITHUB_ACTION_PATH/scripts/action_run.sh"

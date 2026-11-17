@@ -95,6 +95,21 @@ and a Content-Security-Policy that only allows the page's own files (no inline
 scripts). Rate limits are per IP and kept in memory only. On Render the visitor
 IP comes from `X-Forwarded-For` (`LOGDOCTOR_TRUST_PROXY=true`, set in `render.yaml`).
 
+## GitHub Action
+
+Run Log Doctor on a log file in your own workflow. It runs on the runner, uploads
+nothing and needs no key. The report shows up in the job summary.
+
+```yaml
+- uses: priyxnshu07/universal-log-doctor@main
+  with:
+    log-path: app.log
+    fail-on: error      # optional: fail the job on error or above
+```
+
+See [docs/LOGGING.md](docs/LOGGING.md) for logging setups (Python, Java, Node.js,
+Go, C/C++) that Log Doctor reads well.
+
 ## Command line
 
 Runs locally and sends nothing anywhere.
@@ -227,4 +242,4 @@ A free Render service goes to sleep after 15 minutes without traffic, and the fi
 - [x] **R4** Probable causes, debugging steps and downloadable report
 - [x] **R5** Optional AI diagnosis with your own key (Groq, OpenAI, Anthropic)
 - [x] **R6** Rate limits, ZIP upload with safe-extraction limits, security hardening, live check
-- [ ] **R7** Command-line tool and a GitHub Actions workflow to use it from your own project
+- [x] **R7** Command-line tool and a GitHub Actions workflow to use it from your own project
