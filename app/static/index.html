@@ -32,6 +32,22 @@
     </section>
     <section class="card"><h2>Timeline</h2><div id="timeline"></div><p class="muted" id="timeline-note"></p></section>
     <section class="card"><h2>Problems found</h2><div id="groups"></div></section>
+    <section class="card" id="ai-card">
+      <h2>Optional: AI explanation (bring your own key)</h2>
+      <p class="muted">Everything above works without this. If you add your own API key, a short excerpt of the top problems (up to 5 groups, each sample cut to about 1,200 characters, never the whole log) is sent to the provider you choose, and that provider processes it under its own terms. Your key is used for this one request, is not saved by this site, and is not kept in your browser. Do not use this for logs you are not allowed to share with that provider.</p>
+      <div class="row">
+        <select id="ai-provider" aria-label="Provider">
+          <option value="groq">Groq</option>
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic</option>
+        </select>
+        <input id="ai-model" type="text" placeholder="model (optional)" autocomplete="off" spellcheck="false" aria-label="Model">
+        <input id="ai-key" type="password" placeholder="your API key" autocomplete="off" spellcheck="false" aria-label="API key">
+        <button id="ai-run" class="secondary">Explain with AI</button>
+      </div>
+      <div id="ai-error" role="alert"></div>
+      <div id="ai-answer" class="ai-answer"></div>
+    </section>
   </div>
 
   <section class="card">

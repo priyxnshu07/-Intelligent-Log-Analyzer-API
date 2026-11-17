@@ -5,10 +5,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import ValidationError
 
+from app import ai
 from app.errors import ApiError
 from app.ingest import ALLOWED_EXTENSIONS, check_extension, clean_filename, decode_log
 from app.limits import format_bytes, read_limited_body, too_large
-from app.schemas import AnalyzeResponse, SourceInfo, TextRequest
+from app.schemas import AiRequest, AiResponse, AnalyzeResponse, SourceInfo, TextRequest
 from logdoctor import analyze
 from logdoctor.report import render_markdown
 
@@ -131,6 +132,36 @@ async def make_report(request: Request) -> Response:
             "Cache-Control": "no-store",
         },
     )
+
+
+@router.post("/ai/diagnose", response_model=AiResponse, summary="Optional AI explanation using your own API key")
+async def ai_diagnose(request: Request) -> AiResponse:
+    """Send a short excerpt of an analysis to the chosen provider with the caller's key.
+
+    The key is used for this one call and dropped. It is never stored or logged.
+    """
+    settings = request.app.state.settings
+    body = await read_limited_body(request, settings.max_upload_bytes)
+    try:
+        payload = AiRequest.model_validate_json(body)
+    except ValidationError as error:
+        if error.errors()[0]["type"] == "json_invalid":
+            raise ApiError(400, "invalid_json", "The request body is not valid JSON.") from None
+        raise ApiError(
+            422,
+            "invalid_request",
+            "Send {\"provider\": \"groq|openai|anthropic\", \"api_key\": \"...\", "
+            "\"analysis\": <the JSON an analyze endpoint returned>}.",
+        ) from None
+    provider = ai.PROVIDERS[payload.provider]
+    key = ai.check_key(payload.api_key.get_secret_value())
+    model = ai.check_model(payload.model, provider)
+    if not payload.analysis.analysis.groups:
+        raise ApiError(400, "nothing_to_explain", "The analysis has no problem groups, so there is nothing to explain.")
+    answer = await request.app.state.ai_gate.run(
+        ai.ask, provider, key, model, payload.analysis.analysis, request.app.state.ai_transport
+    )
+    return AiResponse(**answer.__dict__)
 
 
 async def _analyze(request: Request, text: str, source: SourceInfo) -> AnalyzeResponse:

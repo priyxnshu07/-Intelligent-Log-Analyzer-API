@@ -182,6 +182,50 @@
     if (scroll) $("results").scrollIntoView({ behavior: "smooth" });
   }
 
+  // The API key lives only in this input while the request is sent. It is never stored.
+  async function explainWithAi() {
+    if (!lastResult) return;
+    const box = $("ai-error");
+    const answer = $("ai-answer");
+    const keyInput = $("ai-key");
+    box.style.display = "none";
+    answer.replaceChildren();
+    if (!keyInput.value.trim()) {
+      box.textContent = "Enter your API key first. Nothing is sent without one.";
+      box.style.display = "block";
+      return;
+    }
+    $("ai-run").disabled = true;
+    $("ai-run").textContent = "Asking...";
+    try {
+      const response = await fetch(API + "/api/ai/diagnose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: $("ai-provider").value,
+          api_key: keyInput.value.trim(),
+          model: $("ai-model").value.trim() || null,
+          analysis: lastResult,
+        }),
+      });
+      let body = null;
+      try { body = await response.json(); } catch (e) { /* not JSON */ }
+      if (!response.ok) {
+        box.textContent = body && body.error ? body.error.message : "Something went wrong (" + response.status + ").";
+        box.style.display = "block";
+        return;
+      }
+      answer.appendChild(document.createTextNode(body.text));
+      answer.appendChild(el("div", "ai-meta", "Written by " + body.provider + " (" + body.model + ") from " + body.groups_sent + " problem group(s). AI can be wrong: check it against the evidence above."));
+    } catch (e) {
+      box.textContent = "Could not reach the server.";
+      box.style.display = "block";
+    } finally {
+      $("ai-run").disabled = false;
+      $("ai-run").textContent = "Explain with AI";
+    }
+  }
+
   // Ask the server if it is up. A sleeping free server needs about a minute.
   async function watchServer(attempt) {
     const status = $("server-status");
@@ -202,6 +246,7 @@
   $("analyze").addEventListener("click", analyzeText);
   $("dl-report").addEventListener("click", downloadReport);
   $("dl-json").addEventListener("click", downloadJson);
+  $("ai-run").addEventListener("click", explainWithAi);
   $("file").addEventListener("change", (event) => {
     const file = event.target.files[0];
     if (file) analyzeFile(file);

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, SecretStr
 
 from logdoctor.models import Analysis
 
@@ -22,3 +24,18 @@ class SourceInfo(BaseModel):
 class AnalyzeResponse(BaseModel):
     source: SourceInfo
     analysis: Analysis
+
+
+class AiRequest(BaseModel):
+    provider: Literal["groq", "openai", "anthropic"]
+    api_key: SecretStr  # hidden from repr and logs; used for one call, never stored
+    model: str | None = None
+    analysis: AnalyzeResponse  # the JSON an analyze endpoint returned
+
+
+class AiResponse(BaseModel):
+    provider: str
+    model: str
+    text: str
+    groups_sent: int
+    characters_sent: int

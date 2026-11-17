@@ -41,3 +41,9 @@ a { color: var(--primary); }
 details.cause > summary.cause-head { cursor: pointer; color: var(--text); }
 .steps { margin: 6px 0 4px 18px; padding: 0; line-height: 1.5; }
 .small { font-size: .8rem; }
+
+#ai-card input, #ai-card select { background: #0f0f0f; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px; font: inherit; }
+#ai-card input[type=password] { flex: 1; min-width: 180px; }
+#ai-error { display: none; color: var(--warn); margin-top: 10px; font-size: .9rem; }
+.ai-answer { white-space: pre-wrap; margin-top: 12px; }
+.ai-answer .ai-meta { color: var(--muted, #888); font-size: .85rem; white-space: normal; margin-top: 8px; }
