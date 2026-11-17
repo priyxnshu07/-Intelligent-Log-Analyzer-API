@@ -6,7 +6,7 @@ database, so it can run on a free host with an ephemeral filesystem.
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -16,8 +16,19 @@ from app.api import router as api_router
 from app.config import Settings, load_settings
 from app.errors import register_error_handlers
 from app.limits import AnalysisGate
+from app.ratelimit import RateLimiter
 
 STATIC_DIR = Path(__file__).parent / "static"
+
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "X-Frame-Options": "DENY",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+}
+# The page loads only its own files. /docs (the API explorer) loads scripts from a CDN, so it is left out.
+PAGE_CSP = "default-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+_NO_CSP_PATHS = ("/docs", "/redoc", "/openapi.json")
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -33,6 +44,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.gate = AnalysisGate(settings.max_concurrent_analyses)
     app.state.ai_gate = AnalysisGate(2)  # provider calls wait on the network, so keep a few slots
+    app.state.analysis_limiter = RateLimiter(settings.rate_limit_analyses_per_min)
+    app.state.ai_limiter = RateLimiter(settings.rate_limit_ai_per_min)
     app.state.ai_transport = urllib_transport  # tests swap in a fake
 
     if settings.cors_origins:
@@ -45,6 +58,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     register_error_handlers(app)
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        response = await call_next(request)
+        for name, value in SECURITY_HEADERS.items():
+            response.headers.setdefault(name, value)
+        if not request.url.path.startswith(_NO_CSP_PATHS):
+            response.headers.setdefault("Content-Security-Policy", PAGE_CSP)
+        return response
+
     app.include_router(api_router)
 
     @app.get("/health", summary="Health check for the hosting platform")

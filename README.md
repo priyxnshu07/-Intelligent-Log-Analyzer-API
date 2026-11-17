@@ -80,6 +80,21 @@ curl -s localhost:8000/api/ai/diagnose -H 'content-type: application/json' \
   -d '{"provider":"groq","api_key":"YOUR_KEY","analysis": <JSON from /api/analyze/text>}'
 ```
 
+## ZIP uploads
+
+Upload a `.zip` of log files and they are read in name order and analyzed as
+one log. Nothing is written to disk: files are unpacked in memory, unsafe names
+(`../`, absolute paths, backslashes, hidden files) are skipped, sizes are
+counted while unpacking instead of trusted from the ZIP's own header (so a zip
+bomb is stopped), and encrypted or nested ZIPs are refused.
+
+## Security notes
+
+Responses carry `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`
+and a Content-Security-Policy that only allows the page's own files (no inline
+scripts). Rate limits are per IP and kept in memory only. On Render the visitor
+IP comes from `X-Forwarded-For` (`LOGDOCTOR_TRUST_PROXY=true`, set in `render.yaml`).
+
 ## Command line
 
 Runs locally and sends nothing anywhere.
@@ -166,7 +181,8 @@ These protect a small free server. They can be changed with environment variable
 | Pasted text | 1 MB |
 | Lines analyzed | 50,000 |
 | Analyses running at once | 2 |
-| Requests per minute per visitor | 20 analyses, 5 AI calls (planned for R6, not enforced yet) |
+| Requests per minute per visitor (by IP) | 20 analyses (paste, file, report), 5 AI calls. Over the limit: `429` with `Retry-After` |
+| ZIP upload | up to 20 log files read, 1,000 entries scanned, 10 MB per file and 20 MB in total once unpacked; no password-protected or nested ZIPs |
 | Problem groups returned | 500 (the total is still reported) |
 | Groups that get probable causes | 100, at most 3 causes each |
 | Groups in a Markdown report | 50 in detail |
@@ -210,5 +226,5 @@ A free Render service goes to sleep after 15 minutes without traffic, and the fi
 - [x] **R3** Java, JavaScript/Node.js, Go and C++ parsers, plus JSON and CSV logs
 - [x] **R4** Probable causes, debugging steps and downloadable report
 - [x] **R5** Optional AI diagnosis with your own key (Groq, OpenAI, Anthropic)
-- [ ] **R6** Rate limits, ZIP upload with safe-extraction limits, security hardening, live check
+- [x] **R6** Rate limits, ZIP upload with safe-extraction limits, security hardening, live check
 - [ ] **R7** Command-line tool and a GitHub Actions workflow to use it from your own project

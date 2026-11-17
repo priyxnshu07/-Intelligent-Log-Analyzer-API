@@ -36,6 +36,8 @@ class Settings:
     # Websites allowed to call the API from a browser (for a separately hosted
     # landing page). Empty means same-origin only, which is the safe default.
     cors_origins: tuple[str, ...] = ()
+    # True behind a proxy that sets X-Forwarded-For (Render does). Used to tell visitors apart.
+    trust_proxy: bool = False
 
 
 def _origins_env(name: str) -> tuple[str, ...]:
@@ -45,6 +47,10 @@ def _origins_env(name: str) -> tuple[str, ...]:
         if not origin.startswith(("http://", "https://")) or origin == "*":
             raise ValueError(f"{name} must be a comma-separated list of full origins, got {origin!r}")
     return origins
+
+
+def _bool_env(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
 
 
 def load_settings() -> Settings:
@@ -57,4 +63,5 @@ def load_settings() -> Settings:
         rate_limit_analyses_per_min=_int_env("LOGDOCTOR_RATE_ANALYSES_PER_MIN", 20),
         rate_limit_ai_per_min=_int_env("LOGDOCTOR_RATE_AI_PER_MIN", 5),
         cors_origins=_origins_env("LOGDOCTOR_CORS_ORIGINS"),
+        trust_proxy=_bool_env("LOGDOCTOR_TRUST_PROXY"),
     )
