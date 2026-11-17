@@ -16,6 +16,28 @@ This project grew out of an earlier "Intelligent Log Analyzer API". That version
 
 Planned languages: Python, Java, JavaScript/Node.js, Go and C++, added one at a time.
 
+## The engine
+
+The analysis lives in the `logdoctor/` package. It has no web code, so the website, the API and a command-line tool can all use it.
+
+```python
+from logdoctor import analyze
+
+result = analyze(open("app.log").read())
+print(result.summary.error_count)
+for group in result.groups:          # most severe and most frequent first
+    print(group.level, group.count, group.title, "lines", group.lines)
+```
+
+What it does today:
+- Reads timestamps (ISO style, with time zones) and levels (INFO, WARN, ERROR, FATAL and common variants) from plain text, key=value and JSON-per-line logs.
+- Keeps multi-line records together, including Python tracebacks and chained exceptions.
+- Groups repeated problems by masking ids, numbers, IPs and paths, and keeps the line numbers as evidence.
+- Counts failures over time in buckets sized to fit the log.
+- If a log is longer than the line limit, it analyzes the most recent lines and says so.
+
+Known gaps, planned for R3: Java, JavaScript/Node.js, Go and C++ errors are grouped by their message, but their stack traces are not understood yet, and JSON logs are not parsed field by field.
+
 ## Limits
 
 These protect a small free server. They can be changed with environment variables (see `.env.example`).
@@ -58,7 +80,9 @@ A free Render service goes to sleep after 15 minutes without traffic, and the fi
 ## Roadmap
 
 - [x] **R0** Foundation: stateless FastAPI app, `/health`, `$PORT`, Render config, tests, CI
-- [ ] **R1** Analysis engine: paste/upload, generic and Python parsing, grouping, severity, frequency, timeline
+- [x] **R1a** Analysis engine (`logdoctor/` package): generic log parsing, Python tracebacks, grouping, severity, frequency, timeline
+- [ ] **R1b** API endpoints for pasted text and uploaded files, with the size limits
+- [ ] **R1c** `logdoctor` command-line tool using the same engine
 - [ ] **R2** Web page: paste, upload, sample logs, results, clear error messages
 - [ ] **R2b** Instant landing page that loads even while the server is asleep
 - [ ] **R3** Java, JavaScript/Node.js, Go and C++ parsers, plus JSON and CSV logs

@@ -1,0 +1,30 @@
+2026-11-18 01:00:00,100 INFO app.main Starting server on port 8000
+2026-11-18 01:00:05,200 INFO app.web GET /users/101 200 12ms
+2026-11-18 01:00:06,300 ERROR app.web Request failed for user 101
+Traceback (most recent call last):
+  File "/srv/app/views.py", line 42, in get_user
+    name = data["user_id"]
+KeyError: 'user_id'
+2026-11-18 01:00:07,000 WARNING app.db Slow query took 2300ms
+2026-11-18 01:01:10,400 ERROR app.web Request failed for user 202
+Traceback (most recent call last):
+  File "/srv/app/views.py", line 42, in get_user
+    name = data["user_id"]
+KeyError: 'user_id'
+2026-11-18 01:02:00,000 ERROR app.db could not connect to 10.0.0.5:5432 after 3 retries
+2026-11-18 01:02:30,000 ERROR app.db could not connect to 10.0.0.9:5432 after 5 retries
+2026-11-18 01:03:00,000 ERROR app.worker Job 9f1c2e3a-1111-4222-8333-444455556666 failed
+Traceback (most recent call last):
+  File "/srv/app/jobs.py", line 10, in run
+    return helper(x)
+  File "/srv/app/jobs.py", line 20, in helper
+    return int(x)
+ValueError: invalid literal for int() with base 10: 'abc'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/srv/app/jobs.py", line 30, in run_safe
+    raise RuntimeError("job crashed")
+RuntimeError: job crashed
+2026-11-18 01:03:05,000 CRITICAL app.main Out of memory, shutting down
