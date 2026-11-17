@@ -33,6 +33,18 @@ class Settings:
     max_concurrent_analyses: int
     rate_limit_analyses_per_min: int
     rate_limit_ai_per_min: int
+    # Websites allowed to call the API from a browser (for a separately hosted
+    # landing page). Empty means same-origin only, which is the safe default.
+    cors_origins: tuple[str, ...] = ()
+
+
+def _origins_env(name: str) -> tuple[str, ...]:
+    raw = os.environ.get(name, "")
+    origins = tuple(part.strip().rstrip("/") for part in raw.split(",") if part.strip())
+    for origin in origins:
+        if not origin.startswith(("http://", "https://")) or origin == "*":
+            raise ValueError(f"{name} must be a comma-separated list of full origins, got {origin!r}")
+    return origins
 
 
 def load_settings() -> Settings:
@@ -44,4 +56,5 @@ def load_settings() -> Settings:
         max_concurrent_analyses=_int_env("LOGDOCTOR_MAX_CONCURRENT", 2),
         rate_limit_analyses_per_min=_int_env("LOGDOCTOR_RATE_ANALYSES_PER_MIN", 20),
         rate_limit_ai_per_min=_int_env("LOGDOCTOR_RATE_AI_PER_MIN", 5),
+        cors_origins=_origins_env("LOGDOCTOR_CORS_ORIGINS"),
     )

@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Universal Log Doctor</title>
-<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="static/style.css">
 </head>
 <body>
 <main>
   <h1>Universal Log Doctor</h1>
   <p class="muted">Paste or upload an application log. Get repeated errors grouped, counted and placed on a timeline. Free, no account, nothing stored.</p>
+  <p class="muted" id="server-status">Server: checking...</p>
 
   <section class="card">
     <h2>Your log</h2>
@@ -17,7 +18,6 @@
     <div class="row">
       <button id="analyze">Analyze</button>
       <label class="filebtn">Upload file<input id="file" type="file" hidden accept=".txt,.log,.json,.jsonl,.ndjson,.csv"></label>
-      <button id="sample" class="secondary">Try a sample</button>
       <span id="busy" class="muted"></span>
     </div>
     <div id="error" role="alert"></div>
@@ -39,6 +39,7 @@
     </ul>
   </section>
 </main>
-<script src="/static/app.js"></script>
+<script src="static/config.js"></script>
+<script src="static/app.js"></script>
 </body>
 </html>

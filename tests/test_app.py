@@ -70,17 +70,8 @@ def test_settings_reject_bad_values(monkeypatch, bad):
 
 
 def test_static_assets_served():
-    for path in ("/static/app.js", "/static/style.css", "/static/samples/python-web-app.txt"):
+    for path in ("/static/app.js", "/static/style.css"):
         assert client.get(path).status_code == 200, path
-
-
-def test_sample_log_has_problems():
-    from logdoctor import analyze
-
-    text = client.get("/static/samples/python-web-app.txt").text
-    result = analyze(text)
-    assert result.summary.group_count == 4
-    assert result.summary.languages == ["python"]
 
 
 def test_frontend_never_uses_unsafe_html_apis():
@@ -88,3 +79,10 @@ def test_frontend_never_uses_unsafe_html_apis():
     source = client.get("/static/app.js").text
     for banned in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval("):
         assert banned not in source, banned
+
+
+def test_page_uses_relative_asset_paths():
+    html = client.get("/").text
+    assert 'src="static/app.js"' in html and 'href="static/style.css"' in html
+    assert 'src="/static' not in html
+    assert client.get("/static/config.js").status_code == 200
