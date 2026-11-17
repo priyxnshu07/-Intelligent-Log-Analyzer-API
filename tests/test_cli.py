@@ -88,3 +88,27 @@ def test_report_without_matching_rule_has_no_cause_section(tmp_path, capsys):
     main([path])
     out = capsys.readouterr().out
     assert "probable cause" not in out and "not proof" not in out
+
+
+def test_markdown_flag(tmp_path, capsys):
+    path = write(tmp_path)
+    assert main([path, "--markdown"]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("# Log diagnosis report") and "Source: app.txt" in out
+
+
+def test_json_and_markdown_together_is_an_error(tmp_path, capsys):
+    assert main([write(tmp_path), "--json", "--markdown"]) == 2
+    assert "either" in capsys.readouterr().err
+
+
+def test_markdown_from_stdin_has_no_source_line(monkeypatch, capsys):
+    import io
+    import sys
+
+    class FakeStdin:
+        buffer = io.BytesIO(LOG.encode())
+
+    monkeypatch.setattr(sys, "stdin", FakeStdin())
+    assert main(["--markdown"]) == 0
+    assert "Source:" not in capsys.readouterr().out

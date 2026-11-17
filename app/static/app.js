@@ -118,7 +118,47 @@
     return box;
   }
 
+  let lastResult = null;
+
+  function saveBlob(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function downloadReport() {
+    if (!lastResult) return;
+    showError("");
+    try {
+      const response = await fetch(API + "/api/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(lastResult),
+      });
+      if (!response.ok) {
+        let body = null;
+        try { body = await response.json(); } catch (e) { /* not JSON */ }
+        showError(body && body.error ? body.error.message : "Could not make the report (" + response.status + ").");
+        return;
+      }
+      saveBlob(await response.blob(), "log-report.md");
+    } catch (e) {
+      showError("Could not reach the server to make the report.");
+    }
+  }
+
+  function downloadJson() {
+    if (!lastResult) return;
+    saveBlob(new Blob([JSON.stringify(lastResult, null, 2)], { type: "application/json" }), "log-analysis.json");
+  }
+
   function render(data, scroll) {
+    lastResult = data;
     const a = data.analysis;
     const s = a.summary;
     const stats = $("stats");
@@ -135,6 +175,7 @@
     renderTimeline(a.timeline);
     const groups = $("groups");
     groups.replaceChildren();
+    if (s.groups_omitted) notices.appendChild(el("div", "notice", "This log has " + s.group_count + " different problems. Only the " + a.groups.length + " most important are shown."));
     if (!a.groups.length) groups.appendChild(el("p", "muted", "No warnings or errors found in this log."));
     for (const g of a.groups) groups.appendChild(renderGroup(g));
     $("results").style.display = "block";
@@ -159,6 +200,8 @@
   watchServer(0);
 
   $("analyze").addEventListener("click", analyzeText);
+  $("dl-report").addEventListener("click", downloadReport);
+  $("dl-json").addEventListener("click", downloadJson);
   $("file").addEventListener("change", (event) => {
     const file = event.target.files[0];
     if (file) analyzeFile(file);

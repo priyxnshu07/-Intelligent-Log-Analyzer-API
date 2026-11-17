@@ -12,6 +12,7 @@ from logdoctor.timeline import build_timeline
 DEFAULT_MAX_LINES = 50_000
 MAX_LINE_CHARS = 10_000  # longer lines are cut so one huge line cannot slow things down
 MAX_EVIDENCE_LINES = 20
+MAX_GROUPS = 500  # a log of thousands of unique errors must not produce a giant response
 
 
 def analyze(text: str, max_lines: int = DEFAULT_MAX_LINES) -> Analysis:
@@ -30,7 +31,8 @@ def analyze(text: str, max_lines: int = DEFAULT_MAX_LINES) -> Analysis:
     lines = [line[:MAX_LINE_CHARS] for line in all_lines[skipped:]]
 
     entries = build_entries(lines, first_line_no=skipped + 1)
-    groups = _group(entries)
+    all_groups = _group(entries)  # sorted: most severe and most frequent first
+    groups = all_groups[:MAX_GROUPS]
     diagnose_all(groups)
 
     level_counts: dict[str, int] = {}
@@ -47,10 +49,11 @@ def analyze(text: str, max_lines: int = DEFAULT_MAX_LINES) -> Analysis:
         level_counts=level_counts,
         error_count=sum(1 for e in entries if rank(e.level) >= ERROR_RANK),
         warning_count=sum(1 for e in entries if rank(e.level) == WARNING_RANK),
-        group_count=len(groups),
+        group_count=len(all_groups),
         first_timestamp=min(stamps) if stamps else None,
         last_timestamp=max(stamps) if stamps else None,
         languages=sorted({e.language for e in entries if e.language}),
+        groups_omitted=len(all_groups) - len(groups),
     )
     return Analysis(summary=summary, groups=groups, timeline=build_timeline(entries))
 
