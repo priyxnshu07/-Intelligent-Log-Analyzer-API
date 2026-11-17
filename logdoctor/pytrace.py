@@ -7,7 +7,8 @@ with the same shape: take the text of one record, return what was found.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+
+from logdoctor.trace import TraceError
 
 TRACEBACK_START = "Traceback (most recent call last):"
 CHAIN_MARKERS = (
@@ -20,14 +21,10 @@ _EXCEPTION = re.compile(r"^([A-Za-z_][\w.]{0,200})(?::\s?(.*))?$")
 _PATH_SPLIT = re.compile(r"[\\/]")
 
 
-@dataclass
-class PythonError:
-    exception_type: str | None
-    exception_message: str | None
-    frames: list[str] = field(default_factory=list)  # "file.py:function", innermost last
+PythonError = TraceError
 
 
-def detect_python(text: str) -> PythonError | None:
+def detect_python(text: str) -> TraceError | None:
     """Find the last traceback in `text`. Returns None if there is none."""
     lines = text.split("\n")
 
@@ -54,4 +51,4 @@ def detect_python(text: str) -> PythonError | None:
             exception_type = found.group(1)
             exception_message = (found.group(2) or "").strip()
             break
-    return PythonError(exception_type, exception_message, frames)
+    return TraceError(exception_type, exception_message, frames)
