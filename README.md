@@ -59,6 +59,27 @@ Errors always look like `{"error": {"code": "...", "message": "..."}}`.
 Too large is `413`, a wrong file type is `415`, and a busy server is `503`
 with `Retry-After`. Responses are sent with `Cache-Control: no-store`.
 
+## Optional AI explanation (your own key)
+
+Nothing here needs AI. If you want one anyway, the page has an **Explain with
+AI** box: choose Groq, OpenAI or Anthropic, paste your own key, and the server
+asks that provider to explain the top problems.
+
+- The key is used for that one request and dropped. It is not stored, not logged,
+  not kept in your browser, and never appears in an error message.
+- Only an excerpt is sent: up to 5 problem groups, each sample cut to about 1,200
+  characters, 9,000 characters in total. Never the whole log. The provider
+  processes it under its own terms.
+- Provider addresses are fixed in the code and redirects are refused.
+- Provider error text is never passed on (it can contain parts of a key). You get
+  our own message: key rejected, quota, check the model name, or provider down.
+- Model names change often. The defaults may be out of date, so the model box is editable.
+
+```bash
+curl -s localhost:8000/api/ai/diagnose -H 'content-type: application/json' \
+  -d '{"provider":"groq","api_key":"YOUR_KEY","analysis": <JSON from /api/analyze/text>}'
+```
+
 ## Command line
 
 Runs locally and sends nothing anywhere.
@@ -149,6 +170,7 @@ These protect a small free server. They can be changed with environment variable
 | Problem groups returned | 500 (the total is still reported) |
 | Groups that get probable causes | 100, at most 3 causes each |
 | Groups in a Markdown report | 50 in detail |
+| AI excerpt | 5 groups, 9,000 characters; answer capped at 6,000 characters; 2 provider calls at once; 30 s timeout |
 
 ## Run locally
 
@@ -187,6 +209,6 @@ A free Render service goes to sleep after 15 minutes without traffic, and the fi
 - [x] **R2b** Static landing page option with a server wake-up status line
 - [x] **R3** Java, JavaScript/Node.js, Go and C++ parsers, plus JSON and CSV logs
 - [x] **R4** Probable causes, debugging steps and downloadable report
-- [ ] **R5** Optional AI diagnosis with your own key (Groq, OpenAI, Anthropic)
+- [x] **R5** Optional AI diagnosis with your own key (Groq, OpenAI, Anthropic)
 - [ ] **R6** Rate limits, ZIP upload with safe-extraction limits, security hardening, live check
 - [ ] **R7** Command-line tool and a GitHub Actions workflow to use it from your own project

@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.ai import urllib_transport
 from app.api import router as api_router
 from app.config import Settings, load_settings
 from app.errors import register_error_handlers
@@ -31,6 +32,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.gate = AnalysisGate(settings.max_concurrent_analyses)
+    app.state.ai_gate = AnalysisGate(2)  # provider calls wait on the network, so keep a few slots
+    app.state.ai_transport = urllib_transport  # tests swap in a fake
 
     if settings.cors_origins:
         app.add_middleware(
