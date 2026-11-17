@@ -88,3 +88,23 @@ def test_frontend_never_uses_unsafe_html_apis():
     source = client.get("/static/app.js").text
     for banned in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval("):
         assert banned not in source, banned
+
+
+def test_sample_report_is_up_to_date():
+    # If this fails, run: python scripts/make_sample_report.py
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).parent.parent / "scripts" / "make_sample_report.py"
+    spec = importlib.util.spec_from_file_location("make_sample_report", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    committed = (Path(__file__).parent.parent / "app/static/sample-report.json").read_text()
+    assert committed == module.build()
+
+
+def test_page_uses_relative_asset_paths():
+    html = client.get("/").text
+    assert 'src="static/app.js"' in html and 'href="static/style.css"' in html
+    assert 'src="/static' not in html
+    assert client.get("/static/config.js").status_code == 200

@@ -1,0 +1,262 @@
+{
+ "source": {
+  "type": "sample",
+  "filename": "python-web-app.txt",
+  "bytes": 1136,
+  "encoding": "utf-8",
+  "warnings": []
+ },
+ "analysis": {
+  "summary": {
+   "total_lines": 19,
+   "lines_analyzed": 19,
+   "truncated": false,
+   "entries": 11,
+   "level_counts": {
+    "CRITICAL": 1,
+    "ERROR": 5,
+    "WARNING": 2,
+    "INFO": 3
+   },
+   "error_count": 6,
+   "warning_count": 2,
+   "group_count": 4,
+   "first_timestamp": "2024-05-01T09:00:00.120000",
+   "last_timestamp": "2024-05-01T09:40:02.777000",
+   "languages": [
+    "python"
+   ]
+  },
+  "groups": [
+   {
+    "id": "aff635032748",
+    "level": "CRITICAL",
+    "title": "app.main Out of memory, shutting down",
+    "pattern": "app.main Out of memory, shutting down",
+    "exception_type": null,
+    "language": null,
+    "count": 1,
+    "first_seen": "2024-05-01T09:40:02.777000",
+    "last_seen": "2024-05-01T09:40:02.777000",
+    "first_line": 19,
+    "last_line": 19,
+    "lines": [
+     19
+    ],
+    "frames": [],
+    "sample": "2024-05-01 09:40:02,777 CRITICAL app.main Out of memory, shutting down"
+   },
+   {
+    "id": "d30f448bfd1b",
+    "level": "ERROR",
+    "title": "app.db Connection to 10.0.0.5 timed out after 30s",
+    "pattern": "app.db Connection to <ip> timed out after <n>s",
+    "exception_type": null,
+    "language": null,
+    "count": 3,
+    "first_seen": "2024-05-01T09:20:10.004000",
+    "last_seen": "2024-05-01T09:21:12.004000",
+    "first_line": 15,
+    "last_line": 17,
+    "lines": [
+     15,
+     16,
+     17
+    ],
+    "frames": [],
+    "sample": "2024-05-01 09:20:10,004 ERROR app.db Connection to 10.0.0.5 timed out after 30s"
+   },
+   {
+    "id": "70971fa89214",
+    "level": "ERROR",
+    "title": "KeyError: 'user_id'",
+    "pattern": "KeyError: 'user_id'",
+    "exception_type": "KeyError",
+    "language": "python",
+    "count": 2,
+    "first_seen": "2024-05-01T09:14:03.552000",
+    "last_seen": "2024-05-01T09:15:31.220000",
+    "first_line": 4,
+    "last_line": 10,
+    "lines": [
+     4,
+     10
+    ],
+    "frames": [
+     "api.py:get_profile"
+    ],
+    "sample": "2024-05-01 09:14:03,552 ERROR app.api Unhandled error for user 4821\nTraceback (most recent call last):\n  File \"/srv/app/api.py\", line 88, in get_profile\n    return profile[\"user_id\"]\nKeyError: 'user_id'"
+   },
+   {
+    "id": "f95a2491c0b3",
+    "level": "WARNING",
+    "title": "app.db Slow query took 2300ms: SELECT * FROM orders WHERE user_id=4821",
+    "pattern": "app.db Slow query took <n>ms: SELECT * FROM orders WHERE user_id=<n>",
+    "exception_type": null,
+    "language": null,
+    "count": 2,
+    "first_seen": "2024-05-01T09:12:44.010000",
+    "last_seen": "2024-05-01T09:14:09.801000",
+    "first_line": 3,
+    "last_line": 9,
+    "lines": [
+     3,
+     9
+    ],
+    "frames": [],
+    "sample": "2024-05-01 09:12:44,010 WARNING app.db Slow query took 2300ms: SELECT * FROM orders WHERE user_id=4821"
+   }
+  ],
+  "timeline": {
+   "bucket_seconds": 60,
+   "has_timestamps": true,
+   "buckets": [
+    {
+     "start": "2024-05-01T09:12:00",
+     "errors": 0,
+     "warnings": 1
+    },
+    {
+     "start": "2024-05-01T09:13:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:14:00",
+     "errors": 1,
+     "warnings": 1
+    },
+    {
+     "start": "2024-05-01T09:15:00",
+     "errors": 1,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:16:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:17:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:18:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:19:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:20:00",
+     "errors": 2,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:21:00",
+     "errors": 1,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:22:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:23:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:24:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:25:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:26:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:27:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:28:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:29:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:30:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:31:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:32:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:33:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:34:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:35:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:36:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:37:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:38:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:39:00",
+     "errors": 0,
+     "warnings": 0
+    },
+    {
+     "start": "2024-05-01T09:40:00",
+     "errors": 1,
+     "warnings": 0
+    }
+   ]
+  }
+ }
+}

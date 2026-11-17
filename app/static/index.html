@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Universal Log Doctor</title>
-<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="static/style.css">
 </head>
 <body>
 <main>
   <h1>Universal Log Doctor</h1>
   <p class="muted">Paste or upload an application log. Get repeated errors grouped, counted and placed on a timeline. Free, no account, nothing stored.</p>
+  <p class="muted" id="server-status">Server: checking...</p>
 
   <section class="card">
     <h2>Your log</h2>
@@ -24,6 +25,7 @@
   </section>
 
   <div id="results">
+    <div class="notice" id="sample-banner" style="display:none"></div>
     <section class="card"><h2>Summary</h2><div class="stats" id="stats"></div><div id="notices"></div></section>
     <section class="card"><h2>Timeline</h2><div id="timeline"></div><p class="muted" id="timeline-note"></p></section>
     <section class="card"><h2>Problems found</h2><div id="groups"></div></section>
@@ -39,6 +41,7 @@
     </ul>
   </section>
 </main>
-<script src="/static/app.js"></script>
+<script src="static/config.js"></script>
+<script src="static/app.js"></script>
 </body>
 </html>

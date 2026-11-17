@@ -7,6 +7,7 @@ database, so it can run on a free host with an ephemeral filesystem.
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -30,6 +31,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.gate = AnalysisGate(settings.max_concurrent_analyses)
+
+    if settings.cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=list(settings.cors_origins),
+            allow_methods=["GET", "POST"],
+            allow_headers=["Content-Type"],
+            expose_headers=["Retry-After"],
+        )
 
     register_error_handlers(app)
     app.include_router(api_router)

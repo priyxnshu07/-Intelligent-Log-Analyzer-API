@@ -1,6 +1,7 @@
 // All log-derived text is untrusted. It is only ever shown with textContent.
 (function () {
   "use strict";
+  const API = (window.LOGDOCTOR_API || "").replace(/\/$/, "");
   const $ = (id) => document.getElementById(id);
   const el = (tag, className, text) => {
     const node = document.createElement(tag);
@@ -32,7 +33,8 @@
         showError(body && body.error ? body.error.message : "Something went wrong (" + response.status + ").");
         return;
       }
-      render(body);
+      $("sample-banner").style.display = "none";
+      render(body, true);
     } catch (e) {
       showError("Could not reach the server. If this is the free hosting, it may be waking up: wait a minute and try again.");
     } finally {
@@ -43,7 +45,7 @@
   function analyzeText() {
     const text = $("text").value;
     if (!text.trim()) { showError("Paste a log first, or upload a file."); return; }
-    send("/api/analyze/text", {
+    send(API + "/api/analyze/text", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: text }),
@@ -51,11 +53,11 @@
   }
 
   function analyzeFile(file) {
-    send("/api/analyze/file?filename=" + encodeURIComponent(file.name), { method: "POST", body: file });
+    send(API + "/api/analyze/file?filename=" + encodeURIComponent(file.name), { method: "POST", body: file });
   }
 
   async function loadSample() {
-    const response = await fetch("/static/samples/python-web-app.txt");
+    const response = await fetch("static/samples/python-web-app.txt");
     $("text").value = await response.text();
     analyzeText();
   }
@@ -105,7 +107,7 @@
     return box;
   }
 
-  function render(data) {
+  function render(data, scroll) {
     const a = data.analysis;
     const s = a.summary;
     const stats = $("stats");
@@ -125,8 +127,39 @@
     if (!a.groups.length) groups.appendChild(el("p", "muted", "No warnings or errors found in this log."));
     for (const g of a.groups) groups.appendChild(renderGroup(g));
     $("results").style.display = "block";
-    $("results").scrollIntoView({ behavior: "smooth" });
+    if (scroll) $("results").scrollIntoView({ behavior: "smooth" });
   }
+
+  // Show a precomputed report at once, so the page is useful before the
+  // server (which sleeps on free hosting) has woken up.
+  async function showSampleReport() {
+    try {
+      const response = await fetch("static/sample-report.json");
+      if (!response.ok) return;
+      render(await response.json(), false);
+      const banner = $("sample-banner");
+      banner.textContent = "This is a sample report, computed in advance. Paste or upload your own log above to analyze it.";
+      banner.style.display = "block";
+    } catch (e) { /* the page still works without the preview */ }
+  }
+
+  // Ask the server if it is up. A sleeping free server needs about a minute.
+  async function watchServer(attempt) {
+    const status = $("server-status");
+    try {
+      const response = await fetch(API + "/health", { cache: "no-store" });
+      if (response.ok) { status.textContent = "Server: ready"; return; }
+    } catch (e) { /* not reachable yet */ }
+    if (attempt >= 24) {
+      status.textContent = "Server: not responding. Try again in a minute.";
+      return;
+    }
+    status.textContent = "Server: waking up (free hosting sleeps when idle, this can take a minute)...";
+    setTimeout(() => watchServer(attempt + 1), 5000);
+  }
+
+  showSampleReport();
+  watchServer(0);
 
   $("analyze").addEventListener("click", analyzeText);
   $("sample").addEventListener("click", loadSample);
