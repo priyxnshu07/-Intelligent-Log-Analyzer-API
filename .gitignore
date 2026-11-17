@@ -61,6 +61,14 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
+# Local databases and secrets. This app is stateless and keeps neither.
+*.db
+*.sqlite3
+.env
+
+# ...but sample logs for visitors must be committed
+!app/samples/**
+
 # Flask stuff:
 instance/
 .webassets-cache

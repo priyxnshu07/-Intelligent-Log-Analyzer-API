@@ -1,102 +1,68 @@
-# Intelligent Log Analyzer API
+# Universal Log Doctor
 
-This is a simple, powerful demonstration API built to showcase backend development skills using Python, FastAPI, and SQLAlchemy. It provides a basic system for ingesting, querying, and summarizing log data.
+Paste or upload application logs and get the errors grouped, counted and explained. The goal is a free public tool that works for logs from any language, with no account and nothing to install.
 
-This project was built in a few hours as a key part of a strategic job application process to demonstrate the ability to quickly learn and apply new technologies.
+> **Status: early work in progress.** Right now the repo contains only the deployment foundation (server, health check, Render config, tests). The log analysis itself is not built yet. See the roadmap below for what is done and what is next.
 
-## Core Technologies
+This project grew out of an earlier "Intelligent Log Analyzer API". That version stored logs in SQLite and sent them to an LLM using a server-side key. It was replaced because a free public host cannot keep a database, and the new design never uses the owner's API key.
 
-*   **Python 3.9+**
-*   **FastAPI**: For the high-performance API framework.
-*   **SQLAlchemy**: For database interaction and ORM capabilities.
-*   **SQLite**: As the simple, file-based database.
-*   **Uvicorn**: As the ASGI server to run the application.
+## How it will work
 
-## Features
+- **Stateless.** Logs are processed in memory and thrown away. No database, no disk, no Redis, no background workers.
+- **No account needed.** Open the site, paste or upload a log, read the result.
+- **Deterministic analysis first.** Parsing, grouping repeated errors, severity, frequency, a failure timeline, probable causes and debugging steps all work without any AI.
+- **AI is optional and bring-your-own-key.** If you add your own Groq, OpenAI or Anthropic key, you can ask for an AI diagnosis. The key is used for that one request and is never stored or logged. Your log excerpts are sent to the provider you choose, so don't send anything you wouldn't share with them.
+- **Zero cost to run.** Designed for a free Render web service.
 
-1.  **Visual Dashboard**: A real-time, auto-refreshing UI accessible at the root (`/`) to monitor incoming logs and view system health summaries.
-2.  **Log Ingestion**: A `POST /ingest/` endpoint to receive and store new log entries from connected microservices or client apps.
-3.  **Advanced Querying**: A `GET /query/` endpoint that retrieves stored logs. Supports filtering by severity `level` and full-text `search` within log messages.
-4.  **Log Summarization**: A `GET /summary/` endpoint providing aggregated counts of logs grouped by severity.
+Planned languages: Python, Java, JavaScript/Node.js, Go and C++, added one at a time.
 
-## Integration Example
+## Limits
 
-This API is designed to act as a **Centralized Logging Server** for other applications in a microservices architecture. For example, a Node.js Express application can use middleware to automatically push traffic data and error reports to this API via HTTP POST requests using libraries like `axios`.
+These protect a small free server. They can be changed with environment variables (see `.env.example`).
 
-## How to Run This Project
+| Limit | Default |
+|---|---|
+| Upload size | 5 MB |
+| Pasted text | 1 MB |
+| Lines analyzed | 50,000 |
+| Analyses running at once | 2 |
+| Requests per minute per visitor | 20 analyses, 5 AI calls |
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url>
-    cd intelligent_log_analyzer_api
-    ```
+## Run locally
 
-2.  **Create and activate a virtual environment:**
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
+Needs Python 3.13.
 
-3.  **Install the dependencies:**
-    ```bash
-    pip install "fastapi[all]" sqlalchemy
-    ```
-
-4.  **Run the server:**
-    ```bash
-    python3 main.py
-    ```
-
-5.  **Access the Dashboard & API:**
-    *   **Live Dashboard:** `http://127.0.0.1:8000/`
-    *   **Swagger API Docs:** `http://127.0.0.1:8000/docs`
-
-## 🤖 AI-Powered Log Diagnostician (NEW)
-
-This project now includes an intelligent agent that automatically diagnoses errors using LLMs.
-
-### How It Works
-1. Agent queries the database for ERROR-level logs
-2. Sends error context to OpenAI GPT-4 / Groq Llama-3
-3. Returns root cause analysis, suggested fixes, and prevention strategies
-
-### Why I Built This
-I wanted to demonstrate "System of Agents" — where AI doesn't just assist development, 
-but becomes part of the production infrastructure. This agent turns raw error logs into 
-actionable debugging insights.
-
-### Try It
 ```bash
-# Get diagnosis for latest error
-curl http://localhost:8000/agent/diagnose/latest
-
-# Diagnose a specific log
-curl -X POST http://localhost:8000/agent/diagnose -d '{"log_id": 123}'
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+python -m app.main
 ```
 
-See [README_AGENT.md](./README_AGENT.md) for full documentation.
+Then open http://127.0.0.1:8000. The health check is at `/health` and the API docs are at `/docs`.
 
----
+## Run the tests
 
-**Architecture: Distributed Microservices + AI Agent**
+```bash
+pytest
 ```
-┌─────────────┐      ┌──────────────┐      ┌─────────────┐      ┌─────────┐
-│ Client Apps │─────>│ Log Analyzer │─────>│  Database   │<────>│  Agent  │
-│ (Node.js)   │      │  (FastAPI)   │      │ (SQLite)    │      │ (LLM)   │
-└─────────────┘      └──────────────┘      └─────────────┘      └─────────┘
-```
-  ## Architectural Decisions
 
-**Why Two Services (Node.js + Python)?**
-I designed this as a polyglot microservices system to demonstrate cross-language integration patterns 
-common in production environments. The Node.js middleware handles lightweight request routing and 
-client-side interactions, while the Python/FastAPI backend manages compute-heavy log processing and 
-database operations. This mirrors real-world architectures where you choose the right tool per workload.
+## Deploy on Render (free)
 
-**Why FastAPI for the Backend?**
-Async I/O and Pydantic validation make FastAPI ideal for high-throughput log ingestion. The automatic 
-OpenAPI docs also serve as a contract for frontend integration.
+1. Push this repo to GitHub.
+2. In Render, choose **New > Blueprint** and select the repo. It reads `render.yaml`.
+3. Render builds it and uses `/health` to check that it is up.
 
-**Why SQLAlchemy ORM?**
-I wanted type-safe database interactions while maintaining flexibility to optimize raw SQL queries 
-for analytics endpoints if needed.
+A free Render service goes to sleep after 15 minutes without traffic, and the first visit afterwards takes about a minute to wake it. That is a limit of the free plan.
+
+## Roadmap
+
+- [x] **R0** Foundation: stateless FastAPI app, `/health`, `$PORT`, Render config, tests, CI
+- [ ] **R1** Analysis engine: paste/upload, generic and Python parsing, grouping, severity, frequency, timeline
+- [ ] **R2** Web page: paste, upload, sample logs, results, clear error messages
+- [ ] **R2b** Instant landing page that loads even while the server is asleep
+- [ ] **R3** Java, JavaScript/Node.js, Go and C++ parsers, plus JSON and CSV logs
+- [ ] **R4** Probable causes, debugging steps and downloadable report
+- [ ] **R5** Optional AI diagnosis with your own key (Groq, OpenAI, Anthropic)
+- [ ] **R6** Rate limits, ZIP upload with safe-extraction limits, security hardening, live check
+- [ ] **R7** Command-line tool and a GitHub Actions workflow to use it from your own project

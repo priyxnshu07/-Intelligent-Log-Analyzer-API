@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Log Doctor</title>
+    <style>
+        :root {
+            --primary: #ccff00;
+            --bg: #0a0a0a;
+            --card: #1a1a1a;
+            --text: #ffffff;
+            --muted: #999999;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 24px;
+        }
+        main { max-width: 720px; margin: 8vh auto 0; }
+        h1 { color: var(--primary); margin: 0 0 8px; }
+        .card {
+            background: var(--card);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        p { line-height: 1.5; }
+        .muted { color: var(--muted); }
+        a { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Universal Log Doctor</h1>
+        <p class="muted">Find, group and explain errors in your application logs.</p>
+
+        <div class="card">
+            <strong>Work in progress.</strong>
+            <p>
+                The log analysis itself is not built yet. This page is the
+                deployment foundation: the server is up and the health check
+                works. Uploading logs, error grouping and diagnosis arrive in
+                the next releases.
+            </p>
+            <p class="muted">
+                Server status: <span id="status">checking...</span>
+            </p>
+        </div>
+    </main>
+
+    <script>
+        fetch('/health')
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                document.getElementById('status').textContent = data.status;
+            })
+            .catch(function () {
+                document.getElementById('status').textContent = 'unreachable';
+            });
+    </script>
+</body>
+</html>
