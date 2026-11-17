@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from logdoctor.diagnose import diagnose_all
 from logdoctor.entries import build_entries
 from logdoctor.fingerprint import fingerprint, title_for
 from logdoctor.levels import ERROR_RANK, WARNING_RANK, rank
@@ -30,6 +31,7 @@ def analyze(text: str, max_lines: int = DEFAULT_MAX_LINES) -> Analysis:
 
     entries = build_entries(lines, first_line_no=skipped + 1)
     groups = _group(entries)
+    diagnose_all(groups)
 
     level_counts: dict[str, int] = {}
     for entry in entries:

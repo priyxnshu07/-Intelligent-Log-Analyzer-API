@@ -6,7 +6,7 @@ use this same engine.
 """
 
 from logdoctor.analyze import analyze
-from logdoctor.models import Analysis, ErrorGroup, LogEntry, Summary, Timeline
+from logdoctor.models import Analysis, ErrorGroup, LogEntry, ProbableCause, Summary, Timeline
 
 __version__ = "0.1.0"
 
@@ -15,6 +15,7 @@ __all__ = [
     "Analysis",
     "ErrorGroup",
     "LogEntry",
+    "ProbableCause",
     "Summary",
     "Timeline",
 ]

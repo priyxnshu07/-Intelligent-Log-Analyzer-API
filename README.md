@@ -104,6 +104,21 @@ Limits: each line is read on its own, so pretty-printed multi-line JSON and CSV
 values that contain line breaks are not supported. A CSV file needs a header
 row with a message column plus a level or time column.
 
+## Probable causes
+
+For each problem group the tool suggests probable causes and debugging steps.
+These come from a fixed list of rules in `logdoctor/rules.py` (connection
+refused, timeouts, out of memory, null references, full disk, certificate
+errors, C++ memory bugs, Go deadlocks and so on). The same log always gives
+the same answer, and no AI is involved.
+
+- A match in the error message ranks above a match that only appears in the
+  stack trace, and the page says which one it was and which text matched.
+- At most 3 causes per group, and only the 100 most important groups are checked.
+- These are common causes, not a verdict. When nothing matches, no cause is shown.
+- To add a rule, add an entry to `RULES` and an example for it in `tests/test_diagnose.py`;
+  a test fails if a rule has no example.
+
 ## Limits
 
 These protect a small free server. They can be changed with environment variables (see `.env.example`).
@@ -152,7 +167,7 @@ A free Render service goes to sleep after 15 minutes without traffic, and the fi
 - [x] **R2** Web page: paste, upload, results, clear error messages
 - [x] **R2b** Static landing page option with a server wake-up status line
 - [x] **R3** Java, JavaScript/Node.js, Go and C++ parsers, plus JSON and CSV logs
-- [ ] **R4** Probable causes, debugging steps and downloadable report
+- [ ] **R4** Probable causes and debugging steps (done), downloadable report (next)
 - [ ] **R5** Optional AI diagnosis with your own key (Groq, OpenAI, Anthropic)
 - [ ] **R6** Rate limits, ZIP upload with safe-extraction limits, security hardening, live check
 - [ ] **R7** Command-line tool and a GitHub Actions workflow to use it from your own project

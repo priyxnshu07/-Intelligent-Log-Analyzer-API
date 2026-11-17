@@ -82,6 +82,23 @@
     note.textContent = "Each bar is " + timeline.bucket_seconds + " seconds. Orange = errors, yellow = warnings.";
   }
 
+  function renderCauses(causes) {
+    const holder = el("div", "causes");
+    holder.appendChild(el("div", "causes-title", "Probable causes (hints from fixed rules, not proof)"));
+    causes.forEach((cause, index) => {
+      const item = el(index === 0 ? "div" : "details", "cause");
+      const head = el(index === 0 ? "div" : "summary", "cause-head", cause.cause);
+      item.appendChild(head);
+      item.appendChild(el("div", "muted", cause.explanation));
+      const list = el("ol", "steps");
+      for (const step of cause.steps) list.appendChild(el("li", "", step));
+      item.appendChild(list);
+      item.appendChild(el("div", "muted small", 'Matched "' + cause.matched + '" in the ' + cause.where + "."));
+      holder.appendChild(item);
+    });
+    return holder;
+  }
+
   function renderGroup(group) {
     const box = el("div", "group");
     const head = el("div", "group-head");
@@ -93,6 +110,7 @@
     if (group.count > group.lines.length) meta += ", ...";
     if (group.exception_type) meta += ". Exception: " + group.exception_type;
     box.appendChild(el("div", "muted", meta));
+    if (group.causes && group.causes.length) box.appendChild(renderCauses(group.causes));
     const details = el("details");
     details.appendChild(el("summary", "", "Show first occurrence"));
     details.appendChild(el("pre", "", group.sample));

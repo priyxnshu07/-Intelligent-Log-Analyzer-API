@@ -25,6 +25,18 @@ class LogEntry:
 
 
 @dataclass
+class ProbableCause:
+    """A rule-based hint about why a problem happens. A suggestion, not proof."""
+
+    id: str  # rule id, stable
+    cause: str  # short statement
+    explanation: str  # why this usually happens
+    steps: list[str]  # what to check, in order
+    matched: str  # the text from the log that triggered the rule
+    where: str  # "message" (exception type or title) or "stack trace" (weaker evidence)
+
+
+@dataclass
 class ErrorGroup:
     """Repeated occurrences of the same problem."""
 
@@ -42,6 +54,7 @@ class ErrorGroup:
     lines: list[int]  # first few line numbers, used as evidence
     frames: list[str]
     sample: str  # full text of the first occurrence
+    causes: list[ProbableCause] = field(default_factory=list)  # best matches first, may be empty
 
 
 @dataclass

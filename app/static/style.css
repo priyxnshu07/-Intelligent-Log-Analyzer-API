@@ -34,3 +34,10 @@ details summary { cursor: pointer; color: var(--primary); margin-top: 8px; }
 .bar i { display: block; } .bar .e { background: var(--err); } .bar .w { background: var(--warn); }
 .limits li { margin: 4px 0; }
 a { color: var(--primary); }
+.causes { margin-top: 10px; border-left: 3px solid var(--primary); padding-left: 12px; }
+.causes-title { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+.cause { margin-top: 8px; }
+.cause-head { font-weight: 600; cursor: default; }
+details.cause > summary.cause-head { cursor: pointer; color: var(--text); }
+.steps { margin: 6px 0 4px 18px; padding: 0; line-height: 1.5; }
+.small { font-size: .8rem; }
