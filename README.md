@@ -36,7 +36,7 @@ What it does today:
 - Counts failures over time in buckets sized to fit the log.
 - If a log is longer than the line limit, it analyzes the most recent lines and says so.
 
-Known gaps, planned for R3: JSON and CSV logs are not parsed field by field yet. Java traces are understood (the root `Caused by` is what gets grouped), except the two-line `java.util.logging` format. Node.js traces are understood (the last `[cause]` is what gets grouped); Firefox-style `fn@file:line` traces are not. Go panics and fatal errors are understood (the first goroutine, without `runtime` frames); plain Go error log lines are grouped by message. C/C++ crashes are understood: `terminate called` with `what()`, assertion failures, signal lines such as `Caught signal 11 (SIGSEGV)`, AddressSanitizer/ThreadSanitizer/UBSan reports, and frames from glibc `backtrace_symbols`, gdb and the sanitizers. C++ names are not demangled (`_ZN3Foo3barEv` stays as it is).
+Java traces are understood (the root `Caused by` is what gets grouped), except the two-line `java.util.logging` format. Node.js traces are understood (the last `[cause]` is what gets grouped); Firefox-style `fn@file:line` traces are not. Go panics and fatal errors are understood (the first goroutine, without `runtime` frames); plain Go error log lines are grouped by message. C/C++ crashes are understood: `terminate called` with `what()`, assertion failures, signal lines such as `Caught signal 11 (SIGSEGV)`, AddressSanitizer/ThreadSanitizer/UBSan reports, and frames from glibc `backtrace_symbols`, gdb and the sanitizers. C++ names are not demangled (`_ZN3Foo3barEv` stays as it is).
 
 ## The API
 
@@ -90,6 +90,20 @@ On the API server, allow that page's address (nothing is allowed by default):
 LOGDOCTOR_CORS_ORIGINS=https://yourname.github.io
 ```
 
+## JSON and CSV logs
+
+JSON-lines logs (one object per line) and CSV logs with a header row are read
+field by field. The message, level and time are found under the usual names
+(`msg`, `message`, `event`, `level`, `severity`, `time`, `ts`, `@timestamp`,
+nested ECS fields like `log.level`, pino's numeric levels and epoch times).
+Other fields such as request ids or durations are ignored when grouping, so
+repeated errors still group. A stack trace inside a field (`stack`, `err.stack`,
+`exception`, ...) is read by the same language detectors as plain text.
+
+Limits: each line is read on its own, so pretty-printed multi-line JSON and CSV
+values that contain line breaks are not supported. A CSV file needs a header
+row with a message column plus a level or time column.
+
 ## Limits
 
 These protect a small free server. They can be changed with environment variables (see `.env.example`).
@@ -137,7 +151,7 @@ A free Render service goes to sleep after 15 minutes without traffic, and the fi
 - [x] **R1c** `logdoctor` command-line tool using the same engine
 - [x] **R2** Web page: paste, upload, results, clear error messages
 - [x] **R2b** Static landing page option with a server wake-up status line
-- [ ] **R3** (in progress: all five languages done, JSON and CSV left) Java, JavaScript/Node.js, Go and C++ parsers, plus JSON and CSV logs
+- [x] **R3** Java, JavaScript/Node.js, Go and C++ parsers, plus JSON and CSV logs
 - [ ] **R4** Probable causes, debugging steps and downloadable report
 - [ ] **R5** Optional AI diagnosis with your own key (Groq, OpenAI, Anthropic)
 - [ ] **R6** Rate limits, ZIP upload with safe-extraction limits, security hardening, live check

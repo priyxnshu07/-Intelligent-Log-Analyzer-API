@@ -68,6 +68,12 @@ def parse_timestamp(match: re.Match) -> datetime | None:
         return None
 
 
+def find_timestamp(text: str) -> datetime | None:
+    """Read a timestamp from the start of a field value such as "2024-05-01T10:00:00Z"."""
+    match = _TS.search(text[:64])
+    return parse_timestamp(match) if match else None
+
+
 def parse_header(line: str) -> Header | None:
     """Return the header of a log line, or None for indented continuation lines."""
     if not line or line[0] in " \t":

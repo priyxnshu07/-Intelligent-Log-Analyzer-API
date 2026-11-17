@@ -1,0 +1,6 @@
+timestamp,level,service,message
+2024-05-01 10:00:00,INFO,api,server started on port 8080
+2024-05-01 10:00:05,ERROR,db,"connection to 10.0.0.5 timed out after 30s, retrying"
+2024-05-01 10:00:35,ERROR,db,"connection to 10.0.0.5 timed out after 31s, retrying"
+2024-05-01 10:01:00,WARN,cache,eviction took 1800ms
+2024-05-01 10:02:00,CRITICAL,api,out of memory
