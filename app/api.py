@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query, Request, Response
+from starlette.concurrency import run_in_threadpool
 from pydantic import ValidationError
 
 from app import ai
 from app.errors import ApiError
+from app.ratelimit import limit_dependency
 from app.ingest import ALLOWED_EXTENSIONS, check_extension, clean_filename, decode_log
 from app.limits import format_bytes, read_limited_body, too_large
+from app.ziputil import ZIP_SIGNATURE, read_zip
 from app.schemas import AiRequest, AiResponse, AnalyzeResponse, SourceInfo, TextRequest
 from logdoctor import analyze
 from logdoctor.report import render_markdown
@@ -20,6 +23,8 @@ def no_store(response: Response) -> None:
 
 
 router = APIRouter(prefix="/api", dependencies=[Depends(no_store)])
+analysis_limit = Depends(limit_dependency("analysis_limiter"))
+ai_limit = Depends(limit_dependency("ai_limiter"))
 
 _TEXT_BODY = {
     "requestBody": {
@@ -51,6 +56,7 @@ def get_limits(request: Request) -> dict:
     "/analyze/text",
     response_model=AnalyzeResponse,
     summary="Analyze pasted log text",
+    dependencies=[analysis_limit],
     openapi_extra=_TEXT_BODY,
 )
 async def analyze_text(request: Request) -> AnalyzeResponse:
@@ -80,7 +86,8 @@ async def analyze_text(request: Request) -> AnalyzeResponse:
 @router.post(
     "/analyze/file",
     response_model=AnalyzeResponse,
-    summary="Analyze an uploaded log file",
+    summary="Analyze an uploaded log file or a ZIP of logs",
+    dependencies=[analysis_limit],
     openapi_extra=_FILE_BODY,
 )
 async def analyze_file(
@@ -92,6 +99,13 @@ async def analyze_file(
     check_extension(name)  # refuse unsupported types before reading the body
 
     data = await read_limited_body(request, settings.max_upload_bytes)
+    if name and name.lower().endswith(".zip") or data.startswith(ZIP_SIGNATURE):
+        if not data.startswith(ZIP_SIGNATURE):
+            raise ApiError(400, "invalid_zip", "This is not a valid ZIP file.")
+        zipped = await run_in_threadpool(read_zip, data)
+        return await _analyze(request, zipped.text, SourceInfo(
+            type="zip", filename=name, bytes=len(data), encoding="utf-8", warnings=zipped.warnings
+        ))
     decoded = decode_log(data)
     return await _analyze(request, decoded.text, SourceInfo(
         type="file",
@@ -111,7 +125,7 @@ _REPORT_BODY = {
 }
 
 
-@router.post("/report", summary="Make a Markdown report from an analysis result", openapi_extra=_REPORT_BODY)
+@router.post("/report", dependencies=[analysis_limit], summary="Make a Markdown report from an analysis result", openapi_extra=_REPORT_BODY)
 async def make_report(request: Request) -> Response:
     settings = request.app.state.settings
     body = await read_limited_body(request, settings.max_upload_bytes)
@@ -134,7 +148,7 @@ async def make_report(request: Request) -> Response:
     )
 
 
-@router.post("/ai/diagnose", response_model=AiResponse, summary="Optional AI explanation using your own API key")
+@router.post("/ai/diagnose", response_model=AiResponse, summary="Optional AI explanation using your own API key", dependencies=[ai_limit])
 async def ai_diagnose(request: Request) -> AiResponse:
     """Send a short excerpt of an analysis to the chosen provider with the caller's key.
 

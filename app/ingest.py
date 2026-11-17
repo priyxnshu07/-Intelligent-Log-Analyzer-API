@@ -8,12 +8,12 @@ from dataclasses import dataclass, field
 
 from app.errors import ApiError
 
-ALLOWED_EXTENSIONS = (".txt", ".log", ".json", ".jsonl", ".ndjson", ".csv")
+ALLOWED_EXTENSIONS = (".txt", ".log", ".json", ".jsonl", ".ndjson", ".csv", ".zip")
 
 _NAME_PARTS = re.compile(r"[\\/]")
 _CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
 _BINARY_SIGNATURES = (
-    (b"PK\x03\x04", "ZIP files are not supported yet. Extract the log file and upload that."),
+    (b"PK\x03\x04", "This is a ZIP archive. Upload it as a .zip file so it can be unpacked safely."),
     (b"\x1f\x8b", "Compressed (.gz) files are not supported. Decompress the file first."),
     (b"%PDF", "This looks like a PDF, not a text log."),
     (b"\x89PNG", "This looks like an image, not a text log."),

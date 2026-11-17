@@ -68,7 +68,7 @@ def test_extension_allowed(name):
     check_extension(name)
 
 
-@pytest.mark.parametrize("name", ["a.exe", "a.zip", "a.pdf", "a.log.zip"])
+@pytest.mark.parametrize("name", ["a.exe", "a.pdf", "a.tar.gz"])
 def test_extension_rejected(name):
     with pytest.raises(ApiError) as caught:
         check_extension(name)
