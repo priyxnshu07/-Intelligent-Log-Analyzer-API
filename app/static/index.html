@@ -81,6 +81,27 @@
     </section>
   </div>
 
+  <section class="card" id="gh-card">
+    <h2>Add this to your GitHub project</h2>
+    <p class="muted">Get an automatic report with probable causes and fix steps on every push. No account here and no key. Pick your project type, then GitHub opens with the file already filled in: you only press <strong>Commit</strong>. It runs on GitHub, and your log is not sent to this site.</p>
+    <div class="row">
+      <input id="gh-repo" type="text" placeholder="your-name/your-repo" autocomplete="off" spellcheck="false" aria-label="GitHub repository">
+      <input id="gh-branch" type="text" value="main" autocomplete="off" spellcheck="false" aria-label="Branch">
+      <select id="gh-language" aria-label="Project type"></select>
+    </div>
+    <div class="row">
+      <input id="gh-command" type="text" placeholder="your command, for example: python main.py" autocomplete="off" spellcheck="false" aria-label="Command that runs your project" hidden>
+      <label class="remember"><input id="gh-fail" type="checkbox"> Fail the check when an error is found</label>
+    </div>
+    <pre id="gh-yaml" class="yaml" aria-label="Workflow file"></pre>
+    <div class="row">
+      <a id="gh-open" class="filebtn" target="_blank" rel="noopener noreferrer" aria-disabled="true">Open on GitHub</a>
+      <button id="gh-copy" class="secondary">Copy file</button>
+      <span id="gh-note" class="muted"></span>
+    </div>
+    <p class="muted">GitHub will ask you to sign in and show the file. Check it, then press Commit. Afterwards open the <strong>Actions</strong> tab of your repo to see the report. This file goes into the project you want to check, not into Log Doctor.</p>
+  </section>
+
   <section class="card" id="history-card" hidden>
     <h2>Recent analyses on this device</h2>
     <p class="muted">Kept only in this browser (never sent to the server): counts and the titles of the top 3 problems, not your log. The last 10 are kept.</p>
@@ -102,6 +123,7 @@
   </section>
 </main>
 <script src="static/config.js"></script>
+<script src="static/workflow.js"></script>
 <script src="static/app.js"></script>
 </body>
 </html>

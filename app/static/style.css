@@ -55,3 +55,11 @@ details.cause > summary.cause-head { cursor: pointer; color: var(--text); }
 .keyhelp a { color: var(--primary); }
 .remember { display: block; margin-top: 10px; font-size: .9rem; color: var(--muted); }
 #ai-card .row { margin-top: 10px; }
+.yaml { background: #0f0f0f; border: 1px solid var(--line); border-radius: 6px; padding: 12px; overflow-x: auto; font-size: .85rem; margin: 12px 0; }
+#gh-card input[type=text] { background: #0f0f0f; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px; font: inherit; }
+#gh-repo { flex: 1; min-width: 200px; }
+#gh-branch { width: 90px; }
+#gh-command { flex: 1; min-width: 220px; }
+#gh-card select { background: #0f0f0f; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px; font: inherit; }
+a.filebtn { display: inline-block; padding: 9px 16px; border-radius: 6px; text-decoration: none; cursor: pointer; }
+a[aria-disabled="true"] { opacity: .4; pointer-events: none; }
