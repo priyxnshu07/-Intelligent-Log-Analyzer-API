@@ -124,7 +124,7 @@ def test_no_groups_is_refused():
 
 @pytest.mark.parametrize(
     "status,code,http",
-    [(401, "ai_key_rejected", 401), (403, "ai_key_rejected", 401), (429, "ai_rate_limited", 429),
+    [(401, "ai_key_rejected", 401), (403, "ai_forbidden", 403), (429, "ai_rate_limited", 429),
      (400, "ai_request_rejected", 400), (404, "ai_request_rejected", 400),
      (500, "ai_provider_error", 502), (503, "ai_provider_error", 502)],
 )
@@ -223,3 +223,28 @@ def test_urllib_transport_does_not_follow_redirects():
 def test_excerpt_strips_control_chars():
     a = analyze("2024-05-01 10:00:00 ERROR bad\x00thing\x1b[31m happened\n")
     assert "\x00" not in ai.build_excerpt(a) and "\x1b" not in ai.build_excerpt(a)
+
+
+def test_urllib_transport_sends_a_real_user_agent():
+    import http.server
+    import threading
+
+    seen = {}
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            seen["ua"] = self.headers.get("User-Agent")
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"{}")
+
+        def log_message(self, *a):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        ai.urllib_transport(f"http://127.0.0.1:{server.server_port}/", {}, {}, 5.0, allow_http=True)
+    finally:
+        server.shutdown()
+    assert seen["ua"].startswith("universal-log-doctor/") and "urllib" not in seen["ua"].lower()
