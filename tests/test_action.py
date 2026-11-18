@@ -64,3 +64,15 @@ def test_action_file_never_interpolates_inputs_into_shell():
             assert "${{" not in step["run"], "pass inputs through env, not inside the script"
     assert {"log-path", "fail-on"} <= set(action["inputs"])
     assert action["inputs"]["log-path"]["required"] is True
+
+
+def test_selftest_workflow_and_guide_exist_and_match_inputs():
+    import yaml
+
+    action = yaml.safe_load((ROOT / "action.yml").read_text())
+    guide = (ROOT / "docs/GITHUB_ACTION.md").read_text()
+    for name in action["inputs"]:
+        assert f"`{name}`" in guide, f"guide does not explain input {name}"
+    flow = yaml.safe_load((ROOT / ".github/workflows/action-selftest.yml").read_text())
+    uses = [step.get("uses") for step in flow["jobs"]["selftest"]["steps"]]
+    assert uses.count("./") >= 3

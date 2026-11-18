@@ -19,6 +19,14 @@ inputs:
     description: Where to write the Markdown report.
     required: false
     default: log-report.md
+  upload-report:
+    description: Also attach the report to the run as a downloadable artifact ("true" or "false").
+    required: false
+    default: "true"
+  artifact-name:
+    description: Name of that artifact. Use a different name if you run this action twice in one job.
+    required: false
+    default: log-doctor-report
 runs:
   using: composite
   steps:
@@ -36,3 +44,10 @@ runs:
         LOGDOCTOR_MAX_LINES: ${{ inputs.max-lines }}
         LOGDOCTOR_REPORT: ${{ inputs.report-path }}
       run: bash "$GITHUB_ACTION_PATH/scripts/action_run.sh"
+    - name: Attach the report
+      if: always() && inputs.upload-report == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.report-path }}
+        if-no-files-found: ignore
