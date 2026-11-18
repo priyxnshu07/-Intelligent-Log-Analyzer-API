@@ -70,3 +70,10 @@ def test_api_key_never_written_to_local_storage():
     assert "keyStore(" in js and "sessionStorage" in js
     prefs = js[js.index("function writePrefs"): js.index("function remembered")]
     assert "api_key" not in prefs and "key" not in prefs.replace("PREF_KEY", "")
+
+
+def test_page_explains_ai_options():
+    html = (ROOT / "app/static/index.html").read_text()
+    section = html[html.index("What this tool does"):]
+    for word in ("Groq", "Gemini", "OpenRouter", "Mistral", "OpenAI", "Anthropic", "own key", "Load my models"):
+        assert word in section, word
