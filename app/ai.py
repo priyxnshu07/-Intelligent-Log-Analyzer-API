@@ -28,6 +28,7 @@ from app.errors import ApiError
 from logdoctor.models import Analysis
 
 TIMEOUT_SECONDS = 30.0
+USER_AGENT = "universal-log-doctor/0.1 (+https://github.com/priyxnshu07/universal-log-doctor)"
 MAX_RESPONSE_BYTES = 1_000_000
 MAX_ANSWER_CHARS = 6000
 MAX_OUTPUT_TOKENS = 900
@@ -184,6 +185,8 @@ def urllib_transport(
     """POST JSON and return (status, parsed JSON or None). Raises TransportError if unreachable."""
     if not (url.startswith("https://") or (allow_http and url.startswith("http://"))):
         raise TransportError
+    # Some providers sit behind firewalls that refuse Python's default user agent with a 403.
+    headers = {"User-Agent": USER_AGENT, "Accept": "application/json", **headers}
     request = urllib.request.Request(url, json.dumps(payload).encode("utf-8"), headers, method="POST")
     opener = urllib.request.build_opener(_NoRedirect)
     try:
@@ -217,7 +220,9 @@ class Answer:
 
 def _failure(status: int) -> ApiError:
     """Our own wording for a provider failure. The provider's text is never passed on."""
-    if status in (401, 403):
+    if status == 403:
+        return ApiError(403, "ai_forbidden", "The provider refused the request (403). The key may lack access to this model, or the provider blocked the request. Try another model or key.")
+    if status == 401:
         return ApiError(401, "ai_key_rejected", "The provider rejected the API key. Check the key and that it belongs to this provider.")
     if status == 429:
         return ApiError(429, "ai_rate_limited", "The provider says this key is out of quota or is sending too many requests. Try again later.")
