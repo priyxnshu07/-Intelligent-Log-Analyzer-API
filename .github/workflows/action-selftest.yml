@@ -1,0 +1,51 @@
+name: Action self-test
+
+# Runs the action from this repo on a real GitHub runner, so a broken action is caught before users hit it.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Report only (must pass, even though the log has errors)
+        uses: ./
+        with:
+          log-path: tests/fixtures/python_app.txt
+
+      - name: fail-on error (must fail)
+        id: strict
+        continue-on-error: true
+        uses: ./
+        with:
+          log-path: tests/fixtures/python_app.txt
+          fail-on: error
+          report-path: strict-report.md
+          upload-report: "false"
+      - name: Check that it failed
+        if: steps.strict.outcome != 'failure'
+        run: echo "fail-on error should have failed the step" && exit 1
+
+      - name: A clean log must pass fail-on warning
+        run: printf '2026-01-01 10:00:00 INFO all good\n2026-01-01 10:00:01 INFO still good\n' > clean.log
+      - uses: ./
+        with:
+          log-path: clean.log
+          fail-on: warning
+          report-path: clean-report.md
+          upload-report: "false"
+
+      - name: A missing file must fail
+        id: missing
+        continue-on-error: true
+        uses: ./
+        with:
+          log-path: does-not-exist.log
+          upload-report: "false"
+      - name: Check that it failed
+        if: steps.missing.outcome != 'failure'
+        run: echo "a missing file should have failed the step" && exit 1

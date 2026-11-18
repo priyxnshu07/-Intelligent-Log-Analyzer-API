@@ -119,6 +119,8 @@ nothing and needs no key. The report shows up in the job summary.
     fail-on: error      # optional: fail the job on error or above
 ```
 
+Step-by-step guide, options and what the report shows: [docs/GITHUB_ACTION.md](docs/GITHUB_ACTION.md).
+
 See [docs/LOGGING.md](docs/LOGGING.md) for logging setups (Python, Java, Node.js,
 Go, C/C++) that Log Doctor reads well.
 
