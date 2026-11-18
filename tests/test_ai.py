@@ -328,3 +328,10 @@ def test_models_counts_against_ai_limit():
     c = TestClient(app)
     assert models(c).status_code == 200 and models(c).status_code == 200
     assert models(c).status_code == 429
+
+
+def test_openai_list_drops_dated_copies_pro_and_live():
+    ids = ["gpt-4o-mini", "gpt-4o-mini-2024-07-18", "gpt-4.1", "gpt-4.1-2025-04-14", "gpt-5", "gpt-5-pro",
+           "gpt-5-pro-2025-10-06", "gpt-5.5-pro", "gpt-live-1", "gpt-5-mini", "o3", "o3-2025-04-16"]
+    c = make(FakeTransport(data={"data": [{"id": i} for i in ids]}))
+    assert models(c, provider="openai").json()["models"] == ["gpt-4o-mini", "gpt-4.1", "gpt-5", "gpt-5-mini", "o3"]
