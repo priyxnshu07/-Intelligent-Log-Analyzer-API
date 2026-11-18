@@ -31,7 +31,7 @@ TIMEOUT_SECONDS = 30.0
 USER_AGENT = "universal-log-doctor/0.1 (+https://github.com/priyxnshu07/universal-log-doctor)"
 MAX_RESPONSE_BYTES = 1_000_000
 MAX_ANSWER_CHARS = 6000
-MAX_OUTPUT_TOKENS = 900
+MAX_OUTPUT_TOKENS = 1800  # reasoning models spend part of this thinking
 EXCERPT_GROUPS = 5
 SAMPLE_CHARS = 1200
 PROMPT_CHARS = 9000
@@ -108,7 +108,7 @@ def _anthropic_body(model: str, system: str, user: str) -> dict:
 # Model names change often. These are only defaults: the page lets the visitor type another.
 PROVIDERS: dict[str, Provider] = {
     "groq": Provider(
-        "groq", "Groq", "https://api.groq.com/openai/v1/chat/completions", "llama-3.3-70b-versatile",
+        "groq", "Groq", "https://api.groq.com/openai/v1/chat/completions", "openai/gpt-oss-20b",
         lambda key: {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
         _chat_body("max_tokens"), _openai_style_extract,
     ),
