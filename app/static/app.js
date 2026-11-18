@@ -350,6 +350,49 @@
     }
   }
 
+  // "Add to GitHub": builds the workflow file in the browser and links to GitHub's new-file page.
+  function setupGithubBox() {
+    const W = window.LogDoctorWorkflow;
+    if (!W) return;
+    const select = $("gh-language");
+    for (const key of Object.keys(W.LANGUAGES)) {
+      const option = el("option", "", W.LANGUAGES[key].label);
+      option.value = key;
+      select.appendChild(option);
+    }
+    function refresh() {
+      const language = select.value;
+      $("gh-command").hidden = language !== "other";
+      const text = W.build({ language: language, command: $("gh-command").value, failOn: $("gh-fail").checked ? "error" : "" });
+      $("gh-yaml").textContent = text;
+      const repo = $("gh-repo").value.trim();
+      const branch = $("gh-branch").value.trim() || "main";
+      const link = $("gh-open");
+      const note = $("gh-note");
+      if (W.validRepo(repo) && W.validBranch(branch) && (language !== "other" || $("gh-command").value.trim())) {
+        link.href = W.newFileUrl(repo, branch, text);
+        link.setAttribute("aria-disabled", "false");
+        note.textContent = "";
+      } else {
+        link.removeAttribute("href");
+        link.setAttribute("aria-disabled", "true");
+        note.textContent = language === "other" && !$("gh-command").value.trim() ? "Type the command that runs your project." : "Enter the repo as owner/name.";
+      }
+    }
+    for (const id of ["gh-repo", "gh-branch", "gh-command"]) $(id).addEventListener("input", refresh);
+    select.addEventListener("change", refresh);
+    $("gh-fail").addEventListener("change", refresh);
+    $("gh-copy").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText($("gh-yaml").textContent);
+        $("gh-note").textContent = "Copied. In your repo: Add file, Create new file, name it .github/workflows/log-doctor.yml, paste, Commit.";
+      } catch (e) {
+        $("gh-note").textContent = "Could not copy automatically. Select the text above and copy it.";
+      }
+    });
+    refresh();
+  }
+
   // Ask the server if it is up. A sleeping free server needs about a minute.
   async function watchServer(attempt) {
     const status = $("server-status");
@@ -366,6 +409,7 @@
   }
 
   watchServer(0);
+  setupGithubBox();
   renderHistory();
   $("history-clear").addEventListener("click", () => {
     try { localStorage.removeItem(HISTORY_KEY); } catch (e) { /* ignore */ }
