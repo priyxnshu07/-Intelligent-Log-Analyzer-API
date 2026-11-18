@@ -58,3 +58,15 @@ def test_bad_cors_setting_rejected(monkeypatch, value):
     monkeypatch.setenv("LOGDOCTOR_CORS_ORIGINS", value)
     with pytest.raises(ValueError):
         load_settings()
+
+
+def test_api_key_never_written_to_local_storage():
+    import re
+
+    js = (ROOT / "app/static/app.js").read_text()
+    # localStorage may only hold the history and the non-secret AI preferences (model names)
+    for match in re.finditer(r"localStorage\.setItem\(([A-Za-z_]+)", js):
+        assert match.group(1) in ("HISTORY_KEY", "PREF_KEY"), match.group(1)
+    assert "keyStore(" in js and "sessionStorage" in js
+    prefs = js[js.index("function writePrefs"): js.index("function remembered")]
+    assert "api_key" not in prefs and "key" not in prefs.replace("PREF_KEY", "")

@@ -12,7 +12,7 @@ from app.ratelimit import limit_dependency
 from app.ingest import ALLOWED_EXTENSIONS, check_extension, clean_filename, decode_log
 from app.limits import format_bytes, read_limited_body, too_large
 from app.ziputil import ZIP_SIGNATURE, read_zip
-from app.schemas import AiRequest, AiResponse, AnalyzeResponse, SourceInfo, TextRequest
+from app.schemas import AiRequest, AiResponse, ModelsRequest, ModelsResponse, AnalyzeResponse, SourceInfo, TextRequest
 from logdoctor import analyze
 from logdoctor.report import render_markdown
 
@@ -146,6 +146,21 @@ async def make_report(request: Request) -> Response:
             "Cache-Control": "no-store",
         },
     )
+
+
+@router.post("/ai/models", response_model=ModelsResponse, summary="Chat models your own API key can use", dependencies=[ai_limit])
+async def ai_models(request: Request) -> ModelsResponse:
+    body = await read_limited_body(request, 4096)
+    try:
+        payload = ModelsRequest.model_validate_json(body)
+    except ValidationError as error:
+        if error.errors()[0]["type"] == "json_invalid":
+            raise ApiError(400, "invalid_json", "The request body is not valid JSON.") from None
+        raise ApiError(422, "invalid_request", 'Send {"provider": "groq|openai|anthropic", "api_key": "..."}.') from None
+    provider = ai.PROVIDERS[payload.provider]
+    key = ai.check_key(payload.api_key.get_secret_value())
+    models = await request.app.state.ai_gate.run(ai.list_models, provider, key, request.app.state.ai_transport)
+    return ModelsResponse(provider=provider.id, default=provider.default_model, models=models)
 
 
 @router.post("/ai/diagnose", response_model=AiResponse, summary="Optional AI explanation using your own API key", dependencies=[ai_limit])

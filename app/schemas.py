@@ -39,3 +39,14 @@ class AiResponse(BaseModel):
     text: str
     groups_sent: int
     characters_sent: int
+
+
+class ModelsRequest(BaseModel):
+    provider: Literal["groq", "openai", "anthropic"]
+    api_key: SecretStr
+
+
+class ModelsResponse(BaseModel):
+    provider: str
+    default: str
+    models: list[str]

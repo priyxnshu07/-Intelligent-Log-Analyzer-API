@@ -9,7 +9,7 @@
 | Lines analyzed (most recent kept) | 50,000 | `LOGDOCTOR_MAX_LINES` |
 | Analyses at once (others get 503 + Retry-After) | 2 | `LOGDOCTOR_MAX_CONCURRENT` |
 | Analyses per visitor per minute (429 + Retry-After) | 20 | `LOGDOCTOR_RATE_ANALYSES_PER_MIN` |
-| AI calls per visitor per minute | 5 | `LOGDOCTOR_RATE_AI_PER_MIN` |
+| AI calls per visitor per minute (model lookup + explanation) | 10 | `LOGDOCTOR_RATE_AI_PER_MIN` |
 | Trust X-Forwarded-For for visitor IP | off locally, on in `render.yaml` | `LOGDOCTOR_TRUST_PROXY` |
 | Browser origins allowed to call the API | none | `LOGDOCTOR_CORS_ORIGINS` |
 | Line length / record text / message | 10,000 / 4,000 / 500 characters | fixed in code |
@@ -37,7 +37,7 @@ memory is wiped on every restart (nothing is stored anyway).
   request shapes (Groq/OpenAI chat completions, Anthropic messages) come from
   long-stable documentation and the default model names
   (`openai/gpt-oss-20b`, `gpt-4o-mini`, `claude-haiku-5-5`) may be outdated.
-  The model box on the page is editable. Test with your own key (step 4 below).
+  The model list is loaded from the provider (with an "Other" option to type a name). Test with your own key (step 4 below).
 - GitHub shows merge commits under your primary email. Commits have no Claude trailers.
 
 ## 3. How to test, in order
@@ -96,8 +96,10 @@ Expect the report in the job summary, and the job to fail when errors exist.
    model name from the provider's docs into the model box and retry.
 4. If a provider fails with "the provider did not accept the request", the request
    shape needs a fix in `app/ai.py` (`PROVIDERS`). Open an issue or tell me which provider.
-5. Confirm the key is gone: reload the page, the key box is empty; the key is never in
-   localStorage (DevTools, Application tab).
+5. Press **Load my models** first: the dropdown should list only chat models your key can use.
+6. Confirm the key handling: with the box unticked, reload and the key box is empty. Tick
+   **Keep my key in this browser tab**, reload: the key is back; close the tab and open the
+   page again: it is gone. The key is never in Local Storage (DevTools, Application tab).
 
 ### E. Deploy on Render (you do this, last)
 

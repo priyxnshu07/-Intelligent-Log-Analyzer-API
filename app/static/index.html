@@ -34,17 +34,37 @@
     <section class="card"><h2>Problems found</h2><div id="groups"></div></section>
     <section class="card" id="ai-card">
       <h2>Optional: AI explanation (bring your own key)</h2>
-      <p class="muted">Everything above works without this. If you add your own API key, a short excerpt of the top problems (up to 5 groups, each sample cut to about 1,200 characters, never the whole log) is sent to the provider you choose, and that provider processes it under its own terms. Your key is used for this one request, is not saved by this site, and is not kept in your browser. Do not use this for logs you are not allowed to share with that provider.</p>
+      <p class="muted">Everything above works without this. If you add your own API key, a short excerpt of the top problems (up to 5 groups, each sample cut to about 1,200 characters, never the whole log) is sent to the provider you choose, and that provider processes it under its own terms. This site does not save your key. Do not use this for logs you are not allowed to share with that provider.</p>
+      <details class="keyhelp">
+        <summary>How do I get an API key?</summary>
+        <ol>
+          <li>Pick a provider below and open its keys page. You need an account there.</li>
+          <li>Create a new key, give it any name, and copy it. Most providers show the full key only once, so copy it right away.</li>
+          <li>Paste it into the key box here and press <strong>Load my models</strong>.</li>
+        </ol>
+        <ul>
+          <li><a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">Groq keys page</a>: has a free tier, so it is the easiest way to try this.</li>
+          <li><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAI keys page</a>: usually needs prepaid credit on the account.</li>
+          <li><a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">Anthropic keys page</a>: usually needs prepaid credit on the account.</li>
+        </ul>
+        <p class="muted">Keys that are shown to anyone else can be used on your account, so never post one publicly. If you pasted a key somewhere by mistake, delete it on the provider's page and make a new one.</p>
+      </details>
       <div class="row">
         <select id="ai-provider" aria-label="Provider">
           <option value="groq">Groq</option>
           <option value="openai">OpenAI</option>
           <option value="anthropic">Anthropic</option>
         </select>
-        <input id="ai-model" type="text" placeholder="model (optional)" autocomplete="off" spellcheck="false" aria-label="Model">
         <input id="ai-key" type="password" placeholder="your API key" autocomplete="off" spellcheck="false" aria-label="API key">
+        <button id="ai-load" class="secondary">Load my models</button>
+      </div>
+      <div class="row">
+        <select id="ai-model" aria-label="Model"><option value="">Default model</option></select>
+        <input id="ai-model-custom" type="text" placeholder="type a model name" autocomplete="off" spellcheck="false" aria-label="Custom model name" hidden>
         <button id="ai-run" class="secondary">Explain with AI</button>
       </div>
+      <label class="remember"><input id="ai-remember" type="checkbox"> Keep my key in this browser tab until I close it (so I do not have to paste it again)</label>
+      <p class="muted" id="ai-note">The model list comes from the provider and shows what your key can use. Skip it to use the default.</p>
       <div id="ai-error" role="alert"></div>
       <div id="ai-answer" class="ai-answer"></div>
     </section>

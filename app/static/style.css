@@ -50,3 +50,8 @@ details.cause > summary.cause-head { cursor: pointer; color: var(--text); }
 
 .history-item { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: .9rem; }
 [hidden] { display: none !important; }
+.keyhelp { margin: 10px 0; }
+.keyhelp summary { cursor: pointer; color: var(--primary); }
+.keyhelp a { color: var(--primary); }
+.remember { display: block; margin-top: 10px; font-size: .9rem; color: var(--muted); }
+#ai-card .row { margin-top: 10px; }
