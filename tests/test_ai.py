@@ -335,3 +335,56 @@ def test_openai_list_drops_dated_copies_pro_and_live():
            "gpt-5-pro-2025-10-06", "gpt-5.5-pro", "gpt-live-1", "gpt-5-mini", "o3", "o3-2025-04-16"]
     c = make(FakeTransport(data={"data": [{"id": i} for i in ids]}))
     assert models(c, provider="openai").json()["models"] == ["gpt-4o-mini", "gpt-4.1", "gpt-5", "gpt-5-mini", "o3"]
+
+
+# ---------------- free-tier providers
+
+@pytest.mark.parametrize("provider,url,default", [
+    ("gemini", "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", "gemini-flash-latest"),
+    ("openrouter", "https://openrouter.ai/api/v1/chat/completions", "openrouter/free"),
+    ("mistral", "https://api.mistral.ai/v1/chat/completions", "mistral-small-latest"),
+])
+def test_openai_style_providers_diagnose(provider, url, default):
+    t = FakeTransport(data=ok_openai("Explained."))
+    c = make(t)
+    j = c.post("/api/ai/diagnose", json=body(c, provider=provider)).json()
+    assert j["text"] == "Explained." and j["model"] == default and j["provider"] == provider
+    sent_url, headers, payload, _ = t.calls[0]
+    assert sent_url == url and headers["Authorization"] == f"Bearer {KEY}"
+    assert payload["model"] == default and "max_tokens" in payload
+
+
+def test_gemini_models_strip_prefix_and_drop_non_chat():
+    ids = ["models/gemini-2.5-flash", "models/gemini-2.5-pro", "models/gemini-embedding-001",
+           "models/gemini-2.5-flash-preview-tts", "models/gemini-2.0-flash-live-001", "models/imagen-4.0", "models/gemma-3-27b-it"]
+    t = FakeTransport(data={"data": [{"id": i} for i in ids]})
+    c = make(t)
+    assert models(c, provider="gemini").json()["models"] == ["gemini-2.5-flash", "gemini-2.5-pro"]
+    assert t.calls[0][0] == "https://generativelanguage.googleapis.com/v1beta/openai/models"
+
+
+def test_openrouter_lists_only_free_models_and_router_first():
+    ids = ["openai/gpt-4o", "meta-llama/llama-3.3-70b-instruct:free", "openrouter/free", "qwen/qwen3-coder:free", "anthropic/claude-x"]
+    c = make(FakeTransport(data={"data": [{"id": i} for i in ids]}))
+    assert models(c, provider="openrouter").json()["models"] == [
+        "openrouter/free", "meta-llama/llama-3.3-70b-instruct:free", "qwen/qwen3-coder:free"]
+
+
+def test_mistral_models_use_chat_capability():
+    items = [
+        {"id": "mistral-small-latest", "capabilities": {"completion_chat": True}},
+        {"id": "mistral-large-latest", "capabilities": {"completion_chat": True}},
+        {"id": "mistral-embed", "capabilities": {"completion_chat": False}},
+        {"id": "mistral-moderation-latest"},
+        {"id": "mistral-ocr-latest"},
+        {"id": "codestral-latest", "capabilities": {"completion_chat": True}},
+        {"id": "weird-embed-2", "capabilities": {"completion_chat": False}},
+    ]
+    c = make(FakeTransport(data={"data": items}))
+    assert models(c, provider="mistral").json()["models"] == ["mistral-small-latest", "codestral-latest", "mistral-large-latest"]
+
+
+def test_bad_request_message_mentions_key_too():
+    c = make(FakeTransport(status=400, data={"error": {"message": "API key not valid"}}))
+    r = c.post("/api/ai/diagnose", json=body(c, provider="gemini"))
+    assert r.json()["error"]["code"] == "ai_request_rejected" and "key belongs" in r.json()["error"]["message"]

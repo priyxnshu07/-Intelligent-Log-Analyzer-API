@@ -38,6 +38,12 @@ memory is wiped on every restart (nothing is stored anyway).
   long-stable documentation and the default model names
   (`openai/gpt-oss-20b`, `gpt-4o-mini`, `claude-haiku-5-5`) may be outdated.
   The model list is loaded from the provider (with an "Other" option to type a name). Test with your own key (step 4 below).
+- Verified with real keys: Groq (explain + model list) and OpenAI (model list; the
+  explain call hit a billing quota error, which is the account, not the app). **Not yet
+  tried with a real key: Gemini, OpenRouter, Mistral, Anthropic.** Their endpoints and
+  default models (`gemini-flash-latest`, `openrouter/free`, `mistral-small-latest`) come
+  from public docs; use **Load my models** and pick another if a default is refused.
+- Free tiers have their own daily/per-minute caps and data terms. Nothing here controls them.
 - GitHub shows merge commits under your primary email. Commits have no Claude trailers.
 
 ## 3. How to test, in order

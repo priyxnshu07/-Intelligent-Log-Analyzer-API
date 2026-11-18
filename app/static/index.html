@@ -42,18 +42,29 @@
           <li>Create a new key, give it any name, and copy it. Most providers show the full key only once, so copy it right away.</li>
           <li>Paste it into the key box here and press <strong>Load my models</strong>.</li>
         </ol>
+        <p><strong>Free to try</strong> (no card needed at the time of writing; check each page for the current limits):</p>
         <ul>
-          <li><a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">Groq keys page</a>: has a free tier, so it is the easiest way to try this.</li>
-          <li><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAI keys page</a>: usually needs prepaid credit on the account.</li>
-          <li><a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">Anthropic keys page</a>: usually needs prepaid credit on the account.</li>
+          <li><a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">Groq keys page</a>: fast open models.</li>
+          <li><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio keys page</a>: Gemini models.</li>
+          <li><a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer">OpenRouter keys page</a>: many models behind one key; only the ones marked free are listed here.</li>
+          <li><a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener noreferrer">Mistral keys page</a>: Mistral models.</li>
         </ul>
+        <p><strong>Paid</strong> (need credit on the account):</p>
+        <ul>
+          <li><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAI keys page</a></li>
+          <li><a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">Anthropic keys page</a></li>
+        </ul>
+        <p class="muted">Free tiers have daily and per-minute caps, and some providers may use what you send on a free tier to improve their products. Check the provider's terms before sending anything private.</p>
         <p class="muted">Keys that are shown to anyone else can be used on your account, so never post one publicly. If you pasted a key somewhere by mistake, delete it on the provider's page and make a new one.</p>
       </details>
       <div class="row">
         <select id="ai-provider" aria-label="Provider">
-          <option value="groq">Groq</option>
-          <option value="openai">OpenAI</option>
-          <option value="anthropic">Anthropic</option>
+          <option value="groq">Groq (free tier)</option>
+          <option value="gemini">Google Gemini (free tier)</option>
+          <option value="openrouter">OpenRouter (free models)</option>
+          <option value="mistral">Mistral (free tier)</option>
+          <option value="openai">OpenAI (paid)</option>
+          <option value="anthropic">Anthropic (paid)</option>
         </select>
         <input id="ai-key" type="password" placeholder="your API key" autocomplete="off" spellcheck="false" aria-label="API key">
         <button id="ai-load" class="secondary">Load my models</button>
