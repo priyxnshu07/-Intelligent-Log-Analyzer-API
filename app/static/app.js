@@ -221,44 +221,129 @@
     if (scroll) $("results").scrollIntoView({ behavior: "smooth" });
   }
 
-  // The API key lives only in this input while the request is sent. It is never stored.
+  // AI box. The key is sent with each request and is never stored by the server.
+  // Only if the visitor ticks the box is it kept, in this tab's sessionStorage, until the tab closes.
+  const PREF_KEY = "logdoctor.ai.prefs.v1";
+  const keyStore = (provider) => "logdoctor.ai.key." + provider;
+  const OTHER = "__other__";
+
+  function readPrefs() {
+    try { const p = JSON.parse(localStorage.getItem(PREF_KEY) || "{}"); return p && typeof p === "object" ? p : {}; } catch (e) { return {}; }
+  }
+  function writePrefs(update) {
+    try { localStorage.setItem(PREF_KEY, JSON.stringify(Object.assign(readPrefs(), update))); } catch (e) { /* ignore */ }
+  }
+  function remembered(provider) {
+    try { return sessionStorage.getItem(keyStore(provider)) || ""; } catch (e) { return ""; }
+  }
+  function setRemembered(provider, key) {
+    try {
+      if (key) sessionStorage.setItem(keyStore(provider), key); else sessionStorage.removeItem(keyStore(provider));
+    } catch (e) { /* storage blocked: the key simply is not kept */ }
+  }
+
+  function aiError(message) {
+    const box = $("ai-error");
+    box.textContent = message || "";
+    box.style.display = message ? "block" : "none";
+  }
+
+  function setModelOptions(models, defaultModel, selected) {
+    const select = $("ai-model");
+    select.replaceChildren();
+    const first = el("option", "", defaultModel ? "Default (" + defaultModel + ")" : "Default model");
+    first.value = "";
+    select.appendChild(first);
+    for (const name of models) {
+      const option = el("option", "", name);
+      option.value = name;
+      select.appendChild(option);
+    }
+    const other = el("option", "", "Other (type a name)...");
+    other.value = OTHER;
+    select.appendChild(other);
+    select.value = selected && (models.includes(selected) || selected === OTHER) ? selected : "";
+    $("ai-model-custom").hidden = select.value !== OTHER;
+  }
+
+  function currentModel() {
+    const value = $("ai-model").value;
+    if (value === OTHER) return $("ai-model-custom").value.trim() || null;
+    return value || null;
+  }
+
+  function loadProviderState() {
+    const provider = $("ai-provider").value;
+    const saved = remembered(provider);
+    $("ai-key").value = saved;
+    $("ai-remember").checked = Boolean(saved);
+    const prefs = readPrefs();
+    const list = (prefs.models && prefs.models[provider]) || [];
+    setModelOptions(Array.isArray(list) ? list.filter((m) => typeof m === "string") : [], "", (prefs.chosen || {})[provider]);
+    aiError("");
+  }
+
+  async function postJson(path, payload) {
+    const response = await fetch(API + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    let body = null;
+    try { body = await response.json(); } catch (e) { /* not JSON */ }
+    if (!response.ok) {
+      throw new Error(body && body.error ? body.error.message : "Something went wrong (" + response.status + ").");
+    }
+    return body;
+  }
+
+  function keyOrComplain() {
+    const key = $("ai-key").value.trim();
+    if (!key) { aiError("Enter your API key first. Nothing is sent without one."); return null; }
+    setRemembered($("ai-provider").value, $("ai-remember").checked ? key : "");
+    return key;
+  }
+
+  async function loadModels() {
+    const key = keyOrComplain();
+    if (!key) return;
+    const provider = $("ai-provider").value;
+    aiError("");
+    $("ai-load").disabled = true;
+    $("ai-load").textContent = "Loading...";
+    try {
+      const data = await postJson("/api/ai/models", { provider: provider, api_key: key });
+      const prefs = readPrefs();
+      const chosen = (prefs.chosen || {})[provider];
+      setModelOptions(data.models, data.default, chosen);
+      writePrefs({ models: Object.assign({}, prefs.models || {}, { [provider]: data.models }) });
+      $("ai-note").textContent = data.models.length + " chat model(s) available to your key. The first is a good default.";
+    } catch (e) {
+      aiError(e.message || "Could not reach the server.");
+    } finally {
+      $("ai-load").disabled = false;
+      $("ai-load").textContent = "Load my models";
+    }
+  }
+
   async function explainWithAi() {
     if (!lastResult) return;
-    const box = $("ai-error");
     const answer = $("ai-answer");
-    const keyInput = $("ai-key");
-    box.style.display = "none";
     answer.replaceChildren();
-    if (!keyInput.value.trim()) {
-      box.textContent = "Enter your API key first. Nothing is sent without one.";
-      box.style.display = "block";
-      return;
-    }
+    aiError("");
+    const key = keyOrComplain();
+    if (!key) return;
+    const provider = $("ai-provider").value;
+    const model = currentModel();
     $("ai-run").disabled = true;
     $("ai-run").textContent = "Asking...";
     try {
-      const response = await fetch(API + "/api/ai/diagnose", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider: $("ai-provider").value,
-          api_key: keyInput.value.trim(),
-          model: $("ai-model").value.trim() || null,
-          analysis: lastResult,
-        }),
-      });
-      let body = null;
-      try { body = await response.json(); } catch (e) { /* not JSON */ }
-      if (!response.ok) {
-        box.textContent = body && body.error ? body.error.message : "Something went wrong (" + response.status + ").";
-        box.style.display = "block";
-        return;
-      }
+      const body = await postJson("/api/ai/diagnose", { provider: provider, api_key: key, model: model, analysis: lastResult });
+      writePrefs({ chosen: Object.assign({}, readPrefs().chosen || {}, { [provider]: $("ai-model").value }) });
       answer.appendChild(document.createTextNode(body.text));
       answer.appendChild(el("div", "ai-meta", "Written by " + body.provider + " (" + body.model + ") from " + body.groups_sent + " problem group(s). AI can be wrong: check it against the evidence above."));
     } catch (e) {
-      box.textContent = "Could not reach the server.";
-      box.style.display = "block";
+      aiError(e.message || "Could not reach the server.");
     } finally {
       $("ai-run").disabled = false;
       $("ai-run").textContent = "Explain with AI";
@@ -291,6 +376,14 @@
   $("dl-report").addEventListener("click", downloadReport);
   $("dl-json").addEventListener("click", downloadJson);
   $("ai-run").addEventListener("click", explainWithAi);
+  $("ai-load").addEventListener("click", loadModels);
+  $("ai-provider").addEventListener("change", loadProviderState);
+  $("ai-model").addEventListener("change", () => { $("ai-model-custom").hidden = $("ai-model").value !== OTHER; });
+  $("ai-remember").addEventListener("change", () => {
+    const provider = $("ai-provider").value;
+    setRemembered(provider, $("ai-remember").checked ? $("ai-key").value.trim() : "");
+  });
+  loadProviderState();
   $("file").addEventListener("change", (event) => {
     const file = event.target.files[0];
     if (file) analyzeFile(file);

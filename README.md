@@ -65,15 +65,22 @@ Nothing here needs AI. If you want one anyway, the page has an **Explain with
 AI** box: choose Groq, OpenAI or Anthropic, paste your own key, and the server
 asks that provider to explain the top problems.
 
-- The key is used for that one request and dropped. It is not stored, not logged,
-  not kept in your browser, and never appears in an error message.
+- The server uses the key for that one request and drops it. It is not stored, not
+  logged and never appears in an error message.
+- In your browser the key is not kept unless you tick **Keep my key in this browser
+  tab until I close it**. That uses `sessionStorage`: it is forgotten when the tab
+  closes and is never put in `localStorage`.
+- **Load my models** asks the provider which chat models your key can use, so you
+  do not have to guess a model name. Only your key is sent for that.
+- The page explains how to get a key (links to Groq, OpenAI and Anthropic).
+  Groq has a free tier.
 - Only an excerpt is sent: up to 5 problem groups, each sample cut to about 1,200
   characters, 9,000 characters in total. Never the whole log. The provider
   processes it under its own terms.
 - Provider addresses are fixed in the code and redirects are refused.
 - Provider error text is never passed on (it can contain parts of a key). You get
   our own message: key rejected, quota, check the model name, or provider down.
-- Model names change often. The defaults may be out of date, so the model box is editable.
+- Model names change often, so the model list comes from the provider. The defaults are only a starting point (the Groq default was checked against a real account).
 
 ```bash
 curl -s localhost:8000/api/ai/diagnose -H 'content-type: application/json' \
@@ -196,7 +203,7 @@ These protect a small free server. They can be changed with environment variable
 | Pasted text | 1 MB |
 | Lines analyzed | 50,000 |
 | Analyses running at once | 2 |
-| Requests per minute per visitor (by IP) | 20 analyses (paste, file, report), 5 AI calls. Over the limit: `429` with `Retry-After` |
+| Requests per minute per visitor (by IP) | 20 analyses (paste, file, report), 10 AI calls (model lookup and explanation). Over the limit: `429` with `Retry-After` |
 | ZIP upload | up to 20 log files read, 1,000 entries scanned, 10 MB per file and 20 MB in total once unpacked; no password-protected or nested ZIPs |
 | Problem groups returned | 500 (the total is still reported) |
 | Groups that get probable causes | 100, at most 3 causes each |

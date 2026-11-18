@@ -248,3 +248,83 @@ def test_urllib_transport_sends_a_real_user_agent():
     finally:
         server.shutdown()
     assert seen["ua"].startswith("universal-log-doctor/") and "urllib" not in seen["ua"].lower()
+
+
+# ---------------- model lookup (/api/ai/models)
+
+GROQ_LIST = {"data": [{"id": m, "active": True} for m in [
+    "openai/gpt-oss-120b", "meta-llama/llama-prompt-guard-2-22m", "canopylabs/orpheus-arabic-saudi",
+    "openai/gpt-oss-safeguard-20b", "meta-llama/llama-prompt-guard-2-86m", "openai/gpt-oss-20b",
+    "whisper-large-v3", "allam-2-7b", "whisper-large-v3-turbo", "canopylabs/orpheus-v1-english", "qwen/qwen3.8-27b"]]}
+
+
+def models(c, **extra):
+    data = {"provider": "groq", "api_key": KEY}
+    data.update(extra)
+    return c.post("/api/ai/models", json=data)
+
+
+def test_groq_models_filtered_to_chat_and_default_first():
+    t = FakeTransport(data=GROQ_LIST)
+    c = make(t)
+    j = models(c).json()
+    assert j["models"] == ["openai/gpt-oss-20b", "allam-2-7b", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"]
+    assert j["default"] == "openai/gpt-oss-20b"
+    url, headers, payload, _ = t.calls[0]
+    assert url == "https://api.groq.com/openai/v1/models" and payload is None  # a GET, no body
+    assert headers["Authorization"] == f"Bearer {KEY}" and "Content-Type" not in headers
+
+
+def test_openai_models_filtered():
+    ids = ["gpt-4o-mini", "gpt-4o", "o3-mini", "text-embedding-3-small", "whisper-1", "dall-e-3", "tts-1",
+           "gpt-4o-audio-preview", "gpt-image-1", "omni-moderation-latest", "gpt-4o-transcribe", "babbage-002"]
+    c = make(FakeTransport(data={"data": [{"id": i} for i in ids]}))
+    assert models(c, provider="openai").json()["models"] == ["gpt-4o-mini", "gpt-4o", "o3-mini"]
+
+
+def test_anthropic_models_listed():
+    t = FakeTransport(data={"data": [{"id": "claude-haiku-5-5"}, {"id": "claude-opus-5-5"}, {"id": "other"}]})
+    c = make(t)
+    j = models(c, provider="anthropic").json()
+    assert j["models"] == ["claude-haiku-5-5", "claude-opus-5-5"]
+    assert t.calls[0][1]["x-api-key"] == KEY and t.calls[0][0].startswith("https://api.anthropic.com/v1/models")
+
+
+def test_inactive_models_hidden():
+    c = make(FakeTransport(data={"data": [{"id": "good-model", "active": True}, {"id": "old-model", "active": False}]}))
+    assert models(c).json()["models"] == ["good-model"]
+
+
+@pytest.mark.parametrize("status,code", [(401, "ai_key_rejected"), (403, "ai_forbidden"), (429, "ai_rate_limited"), (500, "ai_provider_error")])
+def test_models_errors_mapped_and_key_not_echoed(status, code):
+    c = make(FakeTransport(status=status, data={"error": {"message": f"bad {KEY}"}}))
+    r = models(c)
+    assert r.json()["error"]["code"] == code and KEY not in r.text
+
+
+def test_models_odd_answers():
+    assert models(make(FakeTransport(data={"data": []}))).json()["error"]["code"] == "ai_no_models"
+    assert models(make(FakeTransport(data={"data": "nope"}))).json()["error"]["code"] == "ai_no_models"
+    assert models(make(FakeTransport(data=None))).status_code == 502
+    assert models(make(FakeTransport(error=ai.TransportError()))).json()["error"]["code"] == "ai_unreachable"
+    assert models(make(FakeTransport(error=RuntimeError(KEY)))).status_code == 502
+
+
+def test_models_bad_input(caplog):
+    caplog.set_level(logging.DEBUG)
+    c = make(FakeTransport(data=GROQ_LIST))
+    assert models(c, provider="evil").status_code == 422
+    assert models(c, api_key="short").status_code == 422
+    assert c.post("/api/ai/models", content=b"{nope").status_code == 400
+    assert c.post("/api/ai/models", content=b"x" * 5000).status_code == 413
+    models(c)
+    assert KEY not in caplog.text
+
+
+def test_models_counts_against_ai_limit():
+    import dataclasses as dc
+    app = create_app(dc.replace(load_settings(), rate_limit_ai_per_min=2))
+    app.state.ai_transport = FakeTransport(data=GROQ_LIST)
+    c = TestClient(app)
+    assert models(c).status_code == 200 and models(c).status_code == 200
+    assert models(c).status_code == 429

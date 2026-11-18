@@ -53,7 +53,8 @@ class TransportError(Exception):
     """The provider could not be reached. Carries no details on purpose."""
 
 
-Transport = Callable[[str, dict[str, str], dict, float], "tuple[int, dict | None]"]
+# (url, headers, payload, timeout) -> (status, json). A payload of None means a GET request.
+Transport = Callable[[str, dict[str, str], "dict | None", float], "tuple[int, dict | None]"]
 
 
 @dataclass(frozen=True)
@@ -65,6 +66,8 @@ class Provider:
     headers: Callable[[str], dict[str, str]]
     body: Callable[[str, str, str], dict]  # model, system prompt, user prompt
     extract: Callable[[dict], str | None]
+    models_url: str
+    is_chat_model: Callable[[str], bool]
 
 
 def _openai_style_extract(data: dict) -> str | None:
@@ -105,22 +108,37 @@ def _anthropic_body(model: str, system: str, user: str) -> dict:
     }
 
 
-# Model names change often. These are only defaults: the page lets the visitor type another.
+def _not_in(*bad: str) -> Callable[[str], bool]:
+    return lambda model_id: not any(word in model_id.lower() for word in bad)
+
+
+def _openai_chat(model_id: str) -> bool:
+    lower = model_id.lower()
+    if not re.match(r"^(gpt-|o\d|chatgpt)", lower):
+        return False
+    return not any(w in lower for w in ("audio", "realtime", "image", "transcribe", "tts", "search", "embedding", "moderation", "instruct", "codex", "davinci"))
+
+
+# Model names change often, so the page asks the provider what a key can use.
+# The defaults below are only a starting point.
 PROVIDERS: dict[str, Provider] = {
     "groq": Provider(
         "groq", "Groq", "https://api.groq.com/openai/v1/chat/completions", "openai/gpt-oss-20b",
         lambda key: {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
         _chat_body("max_tokens"), _openai_style_extract,
+        "https://api.groq.com/openai/v1/models", _not_in("whisper", "orpheus", "guard", "safeguard", "tts", "embed"),
     ),
     "openai": Provider(
         "openai", "OpenAI", "https://api.openai.com/v1/chat/completions", "gpt-4o-mini",
         lambda key: {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
         _chat_body("max_completion_tokens"), _openai_style_extract,
+        "https://api.openai.com/v1/models", _openai_chat,
     ),
     "anthropic": Provider(
         "anthropic", "Anthropic", "https://api.anthropic.com/v1/messages", "claude-haiku-5-5",
         lambda key: {"x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json"},
         _anthropic_body, _anthropic_extract,
+        "https://api.anthropic.com/v1/models?limit=100", lambda model_id: model_id.lower().startswith("claude"),
     ),
 }
 
@@ -180,14 +198,15 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def urllib_transport(
-    url: str, headers: dict[str, str], payload: dict, timeout: float, *, allow_http: bool = False
+    url: str, headers: dict[str, str], payload: dict | None, timeout: float, *, allow_http: bool = False
 ) -> tuple[int, dict | None]:
     """POST JSON and return (status, parsed JSON or None). Raises TransportError if unreachable."""
     if not (url.startswith("https://") or (allow_http and url.startswith("http://"))):
         raise TransportError
     # Some providers sit behind firewalls that refuse Python's default user agent with a 403.
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json", **headers}
-    request = urllib.request.Request(url, json.dumps(payload).encode("utf-8"), headers, method="POST")
+    body = None if payload is None else json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(url, body, headers, method="GET" if payload is None else "POST")
     opener = urllib.request.build_opener(_NoRedirect)
     try:
         with opener.open(request, timeout=timeout) as response:
@@ -251,3 +270,35 @@ def ask(
         raise ApiError(502, "ai_empty_answer", "The provider answered without any text. Try another model.")
     clean = _CONTROL.sub("", text).strip()[:MAX_ANSWER_CHARS]
     return Answer(provider.id, model, clean, min(EXCERPT_GROUPS, len(analysis.groups)), len(excerpt))
+
+
+MAX_LISTED_MODELS = 60
+
+
+def list_models(provider: Provider, api_key: str, transport: Transport = urllib_transport) -> list[str]:
+    """Ask the provider which chat models this key can use. Blocking."""
+    headers = {k: v for k, v in provider.headers(api_key).items() if k != "Content-Type"}
+    try:
+        status, data = transport(provider.models_url, headers, None, TIMEOUT_SECONDS)
+    except TransportError:
+        raise ApiError(502, "ai_unreachable", "Could not reach the provider. Check your connection and try again.") from None
+    except Exception:  # noqa: BLE001 - never let an unexpected error carry the key into a message
+        raise ApiError(502, "ai_provider_error", "The provider call failed.") from None
+    if status != 200 or data is None:
+        raise _failure(status)
+    items = data.get("data")
+    ids: set[str] = set()
+    if isinstance(items, list):
+        for item in items:
+            model_id = item.get("id") if isinstance(item, dict) else None
+            if isinstance(model_id, str) and _MODEL_FORMAT.match(model_id) and provider.is_chat_model(model_id):
+                if item.get("active") is False:
+                    continue
+                ids.add(model_id)
+    if not ids:
+        raise ApiError(502, "ai_no_models", "The provider returned no chat models for this key.")
+    ordered = sorted(ids)
+    if provider.default_model in ids:  # the default first, so it is easy to pick
+        ordered.remove(provider.default_model)
+        ordered.insert(0, provider.default_model)
+    return ordered[:MAX_LISTED_MODELS]

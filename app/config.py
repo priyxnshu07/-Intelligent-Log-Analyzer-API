@@ -61,7 +61,7 @@ def load_settings() -> Settings:
         max_lines=_int_env("LOGDOCTOR_MAX_LINES", 50_000),
         max_concurrent_analyses=_int_env("LOGDOCTOR_MAX_CONCURRENT", 2),
         rate_limit_analyses_per_min=_int_env("LOGDOCTOR_RATE_ANALYSES_PER_MIN", 20),
-        rate_limit_ai_per_min=_int_env("LOGDOCTOR_RATE_AI_PER_MIN", 5),
+        rate_limit_ai_per_min=_int_env("LOGDOCTOR_RATE_AI_PER_MIN", 10),
         cors_origins=_origins_env("LOGDOCTOR_CORS_ORIGINS"),
         trust_proxy=_bool_env("LOGDOCTOR_TRUST_PROXY"),
     )

@@ -49,7 +49,7 @@ def test_settings_defaults(monkeypatch):
     assert s.max_lines == 50_000
     assert s.max_concurrent_analyses == 2
     assert s.rate_limit_analyses_per_min == 20
-    assert s.rate_limit_ai_per_min == 5
+    assert s.rate_limit_ai_per_min == 10
 
 
 def test_settings_use_render_port(monkeypatch):
