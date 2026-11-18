@@ -116,7 +116,11 @@ def _openai_chat(model_id: str) -> bool:
     lower = model_id.lower()
     if not re.match(r"^(gpt-|o\d|chatgpt)", lower):
         return False
-    return not any(w in lower for w in ("audio", "realtime", "image", "transcribe", "tts", "search", "embedding", "moderation", "instruct", "codex", "davinci"))
+    if re.search(r"-\d{4}-\d{2}-\d{2}$", lower):  # dated copies of a model that is listed without a date
+        return False
+    if lower.endswith("-pro") or "-pro-" in lower:  # pro models only work with a different endpoint
+        return False
+    return not any(w in lower for w in ("audio", "realtime", "image", "transcribe", "tts", "search", "embedding", "moderation", "instruct", "codex", "davinci", "live"))
 
 
 # Model names change often, so the page asks the provider what a key can use.
