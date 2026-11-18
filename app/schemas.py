@@ -8,6 +8,8 @@ from pydantic import BaseModel, SecretStr
 
 from logdoctor.models import Analysis
 
+ProviderId = Literal["groq", "gemini", "openrouter", "mistral", "openai", "anthropic"]
+
 
 class TextRequest(BaseModel):
     text: str
@@ -27,7 +29,7 @@ class AnalyzeResponse(BaseModel):
 
 
 class AiRequest(BaseModel):
-    provider: Literal["groq", "openai", "anthropic"]
+    provider: ProviderId
     api_key: SecretStr  # hidden from repr and logs; used for one call, never stored
     model: str | None = None
     analysis: AnalyzeResponse  # the JSON an analyze endpoint returned
@@ -42,7 +44,7 @@ class AiResponse(BaseModel):
 
 
 class ModelsRequest(BaseModel):
-    provider: Literal["groq", "openai", "anthropic"]
+    provider: ProviderId
     api_key: SecretStr
 
 

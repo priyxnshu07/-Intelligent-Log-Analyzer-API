@@ -138,6 +138,30 @@ PROVIDERS: dict[str, Provider] = {
         _chat_body("max_completion_tokens"), _openai_style_extract,
         "https://api.openai.com/v1/models", _openai_chat,
     ),
+    "gemini": Provider(
+        "gemini", "Google Gemini", "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        "gemini-flash-latest",
+        lambda key: {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        _chat_body("max_tokens"), _openai_style_extract,
+        "https://generativelanguage.googleapis.com/v1beta/openai/models",
+        lambda m: m.lower().startswith("gemini") and not any(
+            w in m.lower() for w in ("embedding", "tts", "image", "live", "audio", "robotics", "computer-use", "aqa", "native")
+        ),
+    ),
+    "openrouter": Provider(
+        "openrouter", "OpenRouter", "https://openrouter.ai/api/v1/chat/completions", "openrouter/free",
+        lambda key: {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        _chat_body("max_tokens"), _openai_style_extract,
+        "https://openrouter.ai/api/v1/models",
+        lambda m: m == "openrouter/free" or m.endswith(":free"),  # only models that cost nothing
+    ),
+    "mistral": Provider(
+        "mistral", "Mistral", "https://api.mistral.ai/v1/chat/completions", "mistral-small-latest",
+        lambda key: {"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        _chat_body("max_tokens"), _openai_style_extract,
+        "https://api.mistral.ai/v1/models",
+        _not_in("embed", "moderation", "ocr", "transcribe", "voxtral", "tts"),
+    ),
     "anthropic": Provider(
         "anthropic", "Anthropic", "https://api.anthropic.com/v1/messages", "claude-haiku-5-5",
         lambda key: {"x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json"},
@@ -250,7 +274,7 @@ def _failure(status: int) -> ApiError:
     if status == 429:
         return ApiError(429, "ai_rate_limited", "The provider says this key is out of quota or is sending too many requests. Try again later.")
     if status in (400, 404, 422):
-        return ApiError(400, "ai_request_rejected", "The provider did not accept the request. Check the model name.")
+        return ApiError(400, "ai_request_rejected", "The provider did not accept the request. Check the model name, and that the key belongs to this provider.")
     return ApiError(502, "ai_provider_error", "The provider had a problem answering. Try again later.")
 
 
@@ -295,10 +319,15 @@ def list_models(provider: Provider, api_key: str, transport: Transport = urllib_
     if isinstance(items, list):
         for item in items:
             model_id = item.get("id") if isinstance(item, dict) else None
-            if isinstance(model_id, str) and _MODEL_FORMAT.match(model_id) and provider.is_chat_model(model_id):
-                if item.get("active") is False:
-                    continue
-                ids.add(model_id)
+            if not isinstance(model_id, str):
+                continue
+            model_id = model_id.removeprefix("models/")  # Gemini lists names with this prefix
+            if not (_MODEL_FORMAT.match(model_id) and provider.is_chat_model(model_id)):
+                continue
+            capabilities = item.get("capabilities")
+            if item.get("active") is False or (isinstance(capabilities, dict) and capabilities.get("completion_chat") is False):
+                continue
+            ids.add(model_id)
     if not ids:
         raise ApiError(502, "ai_no_models", "The provider returned no chat models for this key.")
     ordered = sorted(ids)

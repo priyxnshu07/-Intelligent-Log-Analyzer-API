@@ -156,7 +156,7 @@ async def ai_models(request: Request) -> ModelsResponse:
     except ValidationError as error:
         if error.errors()[0]["type"] == "json_invalid":
             raise ApiError(400, "invalid_json", "The request body is not valid JSON.") from None
-        raise ApiError(422, "invalid_request", 'Send {"provider": "groq|openai|anthropic", "api_key": "..."}.') from None
+        raise ApiError(422, "invalid_request", 'Send {"provider": "groq|gemini|openrouter|mistral|openai|anthropic", "api_key": "..."}.') from None
     provider = ai.PROVIDERS[payload.provider]
     key = ai.check_key(payload.api_key.get_secret_value())
     models = await request.app.state.ai_gate.run(ai.list_models, provider, key, request.app.state.ai_transport)
@@ -179,7 +179,7 @@ async def ai_diagnose(request: Request) -> AiResponse:
         raise ApiError(
             422,
             "invalid_request",
-            "Send {\"provider\": \"groq|openai|anthropic\", \"api_key\": \"...\", "
+            "Send {\"provider\": \"groq|gemini|openrouter|mistral|openai|anthropic\", \"api_key\": \"...\", "
             "\"analysis\": <the JSON an analyze endpoint returned>}.",
         ) from None
     provider = ai.PROVIDERS[payload.provider]

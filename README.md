@@ -62,7 +62,7 @@ with `Retry-After`. Responses are sent with `Cache-Control: no-store`.
 ## Optional AI explanation (your own key)
 
 Nothing here needs AI. If you want one anyway, the page has an **Explain with
-AI** box: choose Groq, OpenAI or Anthropic, paste your own key, and the server
+AI** box: choose a provider, paste your own key, and the server
 asks that provider to explain the top problems.
 
 - The server uses the key for that one request and drops it. It is not stored, not
@@ -77,6 +77,11 @@ asks that provider to explain the top problems.
 - Only an excerpt is sent: up to 5 problem groups, each sample cut to about 1,200
   characters, 9,000 characters in total. Never the whole log. The provider
   processes it under its own terms.
+- Providers with a free tier (no card at the time of writing): **Groq**, **Google
+  Gemini** (OpenAI-compatible endpoint), **OpenRouter** (only models ending `:free`
+  are listed) and **Mistral**. **OpenAI** and **Anthropic** need paid credit. Free
+  tiers have daily caps, and some providers may use free-tier prompts to improve
+  their products, so check their terms before sending private logs.
 - Provider addresses are fixed in the code and redirects are refused.
 - Provider error text is never passed on (it can contain parts of a key). You get
   our own message: key rejected, quota, check the model name, or provider down.
