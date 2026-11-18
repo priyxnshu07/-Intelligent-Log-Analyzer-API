@@ -128,12 +128,21 @@ Go, C/C++) that Log Doctor reads well.
 
 Runs locally and sends nothing anywhere.
 
+Needs Python 3.10 or newer. Install straight from GitHub (no clone needed):
+
 ```bash
-pip install .                       # from a clone of this repo
+pip install git+https://github.com/priyxnshu07/universal-log-doctor
+```
+
+Then:
+
+```bash
 logdoctor app.log                   # readable report
 logdoctor app.log --json            # full analysis as JSON
 cat app.log | logdoctor             # read standard input
+logdoctor app.log --markdown > report.md   # Markdown report
 logdoctor app.log --fail-on error   # exit 1 if an error group is found (for CI)
+logdoctor app.log --top 20 --max-lines 100000
 ```
 
 Exit codes: `0` ok, `1` the `--fail-on` level was reached, `2` bad input.
