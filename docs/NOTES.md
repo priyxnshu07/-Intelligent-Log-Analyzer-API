@@ -36,7 +36,7 @@ memory is wiped on every restart (nothing is stored anyway).
 - **AI is not verified against the live providers.** The sandbox cannot reach them, so
   request shapes (Groq/OpenAI chat completions, Anthropic messages) come from
   long-stable documentation and the default model names
-  (`llama-3.3-70b-versatile`, `gpt-4o-mini`, `claude-haiku-5-5`) may be outdated.
+  (`openai/gpt-oss-20b`, `gpt-4o-mini`, `claude-haiku-5-5`) may be outdated.
   The model box on the page is editable. Test with your own key (step 4 below).
 - GitHub shows merge commits under your primary email. Commits have no Claude trailers.
 

@@ -55,7 +55,7 @@ def test_success_openai_style():
     assert r.status_code == 200
     j = r.json()
     assert j["text"] == "Check the database connection pool."
-    assert j["provider"] == "groq" and j["model"] == "llama-3.3-70b-versatile"
+    assert j["provider"] == "groq" and j["model"] == "openai/gpt-oss-20b"
     assert j["groups_sent"] == 1
     url, headers, payload, _ = t.calls[0]
     assert url == "https://api.groq.com/openai/v1/chat/completions"
